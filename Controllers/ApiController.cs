@@ -67,9 +67,9 @@ namespace Toyota.Controllers
         }
 
         [Route("/vehicle/sgroups")]
-        public IActionResult GetSgroups(string catalog, string catalog_code)
-        {  
-            List<Sgroups> list = ClassCrud.GetSgroups(catalog, catalog_code);  
+        public IActionResult GetSgroups(string vehicle_id, string group_id, string code_lang = "EN")
+        {
+            List<Sgroups> list = ClassCrud.GetSgroups(vehicle_id, group_id, code_lang);
             return Json(list);
         }
 
@@ -118,7 +118,6 @@ namespace Toyota.Controllers
             return Json(list);
         }
 
-
         [Route("/vehicleAttr")]
         public IActionResult GetVehiclePropArr(string vehicle_id)
         {
@@ -132,5 +131,14 @@ namespace Toyota.Controllers
                 return NotFound(ex.Message);
             }
         }
+
+        [HttpPost]
+        [Route("/vehicle/sgroups")]
+        public IActionResult GetNodes(string [] codes, string [] node_ids)
+        {
+            List<node> list = ClassCrud.GetNodes(codes, node_ids);
+            return Json(list);
+        }
+
     }
 }

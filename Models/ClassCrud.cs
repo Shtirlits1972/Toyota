@@ -76,46 +76,35 @@ namespace Toyota.Models
             catch { }
             return list;
         }
-        public static List<PartsGroup> GetPartsGroup(string vehicle_id, string code_lang = "EU")
+        public static List<PartsGroup> GetPartsGroup(string vehicle_id, string code_lang = "EN")
         {
-            string[] strArr = vehicle_id.Split("_");
-
-            string catalog = strArr[0];
-            string catalog_code = strArr[1];
-
-
             List<PartsGroup> list = null;
-            string strCommand = " SELECT " +
-                                " CONCAT(php1.catalog, '_', php1.catalog_code, '_', php1.part_group) id, " + 
-                                " t1.name FROM pg_header_pics php1 " + 
-                                " LEFT JOIN " + 
-                                " (SELECT pg.group_id id, " +
-                                " pg.desc_lang name " + 
-                                " FROM part_groups pg " +
-                                " WHERE pg.catalog = @catalog " +
-                                " AND pg.code_lang = @code_lang  " +
-                                " AND pg.group_id IN " + 
-                                " (SELECT php.part_group FROM " + 
-                                " pg_header_pics php " +
-                                " WHERE php.catalog = @catalog " +
-                                " AND php.catalog_code = @catalog_code ))t1 " + 
-                                " ON php1.part_group = t1.id " +
-                                " WHERE php1.catalog = @catalog " +
-                                " AND php1.catalog_code = @catalog_code; ";
+            string strCommand = "   SELECT " +
+                                "   mgroup_num id, " +
+                                "   group_name name " +
+                                "   FROM " +
+                                "   mgroup_name; ";
 
-                            try
+                        try
+                        {
+                            using (IDbConnection db = new MySqlConnection(strConn))
                             {
-                                using (IDbConnection db = new MySqlConnection(strConn))
-                                {
-                                    list = db.Query<PartsGroup>(strCommand, new { catalog, catalog_code, code_lang }).ToList();
-                                }
+                                list = db.Query<PartsGroup>(strCommand).ToList();
                             }
-                            catch(Exception ex)
+
+                            for(int i =0;i<list.Count; i++)
                             {
-                                string Error = ex.Message;
-                                int o = 0;
+                                 List<Sgroups> listSgroups = GetSgroups(vehicle_id, list[i].Id, code_lang );
+                                 list[i].childs = listSgroups;
                             }
-                            return list;
+
+                        }
+                        catch(Exception ex)
+                        {
+                            string Error = ex.Message;
+                            int o = 0;
+                        }
+                        return list;
         }
         public static List<header> GetHeaders()
         {
@@ -547,28 +536,44 @@ namespace Toyota.Models
 
             return filters;
         }
-        public static List<Sgroups> GetSgroups(string catalog, string catalog_code)
+        public static List<Sgroups> GetSgroups(string vehicle_id, string  group_id, string code_lang = "EN")
         {
             List<Sgroups> list = null;
+
+            string[] strArr = vehicle_id.Split("_");
+
+            string catalog = strArr[0];
+            string catalog_code = strArr[1];
 
             try
             {
                 #region strCommand
-                string strCommand = " SELECT DISTINCT " +
-                                    " CONCAT(pp.catalog, '_', pp.catalog_code, '_', pp.pic_desc_code) AS id, " +
-                                    " TRIM(pd.desc_en) AS 'name' " +
-                                    " FROM pg_pictures pp " +
-                                    " LEFT JOIN pic_desc pd " +
-                                    " ON pp.catalog = pd.catalog " +
-                                    " AND pp.catalog_code = pd.catalog_code " +
-                                    " AND pp.pic_desc_code = pd.pic_num " +
-                                    " WHERE pp.catalog = @catalog " +
-                                    " AND pp.catalog_code = @catalog_code ; ";
+                string strCommand = " SELECT " +
+                                    " CONCAT(php1.catalog, '_', php1.catalog_code, '_', php1.part_group) node_id, " +
+                                    " t1.name, "+
+                                    " php1.pic_code image_id,  " +
+                                    " '.png' image_ext  " +
+                                    " FROM pg_header_pics php1 " +
+                                    " LEFT JOIN " +
+                                    " (SELECT pg.group_id id, " +
+                                    " pg.desc_lang name " +
+                                    " FROM part_groups pg " +
+                                    " WHERE pg.catalog = @catalog " +
+                                    " AND pg.code_lang = @code_lang  " +
+                                    " AND pg.group_id IN " +
+                                    " (SELECT php.part_group FROM " +
+                                    " pg_header_pics php " +
+                                    " WHERE php.catalog = @catalog " +
+                                    " AND php.catalog_code = @catalog_code ))t1 " +
+                                    " ON php1.part_group = t1.id " +
+                                    " WHERE php1.catalog = @catalog " +
+                                    " AND php1.main_group = @main_group " +
+                                    " AND php1.catalog_code = @catalog_code; ";
                 #endregion
 
                 using (IDbConnection db = new MySqlConnection(strConn))
                 {
-                    list = db.Query<Sgroups>(strCommand, new { catalog, catalog_code }).ToList();
+                    list = db.Query<Sgroups>(strCommand, new { catalog, catalog_code, code_lang, main_group = group_id }).ToList();
                 }
             }
             catch(Exception ex)
@@ -800,6 +805,87 @@ namespace Toyota.Models
             }
 
             return model;
+        }
+
+
+        public static List<node> GetNodes(string [] codesArr =null, string[]  node_idsArr  = null)
+        {
+            List<node> list = new List<node>();
+            string codes = null;
+            string node_ids = null;
+
+            if (codesArr != null && codesArr.Length > 0)
+            {
+                codes = string.Empty;
+
+                for (int i=0; i< codesArr.Length; i++)
+                {
+                    if(i == 0)
+                    {
+                        codes += codesArr[i];
+                    }
+                    else
+                    {
+                        codes += "," + codesArr[i];
+                    }
+                    
+                }
+            }
+
+
+            if (node_idsArr != null && node_idsArr.Length > 0)
+            {
+                node_ids = string.Empty;
+
+                for (int i = 0; i < node_idsArr.Length; i++)
+                {
+                    if (i == 0)
+                    {
+                        node_ids += node_idsArr[i];
+                    }
+                    else
+                    {
+                        node_ids += "," + node_idsArr[i];
+                    }
+                }
+            }
+
+            string strCommand = " SELECT nt.code, nt.group name, nt.node_ids FROM " +
+                                " nodes_tb nt ";
+
+            if(!String.IsNullOrEmpty(codes) || !String.IsNullOrEmpty(node_ids ))
+            {
+                strCommand += " WHERE";
+            }
+
+            if(!String.IsNullOrEmpty( codes ))
+            {
+                strCommand += $"  nt.code IN  ({codes}) ";
+            }
+
+            if (!String.IsNullOrEmpty(codes) && !String.IsNullOrEmpty(node_ids))
+            {
+                strCommand += " OR ";
+            }
+
+            if (!String.IsNullOrEmpty(node_ids))
+            {
+                strCommand += $"  nt.node_ids IN  ({node_ids}) ";
+            }
+
+            try
+            {
+                using (IDbConnection db = new MySqlConnection(strConn))
+                {
+                    list = db.Query<node>(strCommand).ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                string Error = ex.Message;
+                int o = 0;
+            }
+            return list;
         }
     }
 }
