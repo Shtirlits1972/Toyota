@@ -7,17 +7,16 @@ namespace Toyota.Models.Dto
 {
     public class hotspots
     {
-        public string id { get; set; }
-        public string name { get; set; }
-        public int max_x { get; set; }
-        public int max_y { get; set; }
-        public int min_x { get; set; }
-        public int min_y { get; set; }
+        public string hotspot_id { get; set; }
+        public string image_id { get; set; }
+        public int x1 { get; set; }
+        public int y1 { get; set; }
+        public int x2 { get; set; }
+        public int y2 { get; set; }
 
         public override string ToString()
         {
-            return name;
+            return $"{hotspot_id}-{image_id}";
         }
-
     }
 }

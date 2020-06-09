@@ -13,9 +13,9 @@ namespace Toyota.Controllers
     public class ApiController : Controller
     {
         [Route("/vehicle/vin")]
-        public IActionResult GetListCarTypeInfo(string vin8)
+        public IActionResult GetListCarTypeInfo(string vin)
         {
-            List<CarTypeInfo> list = ClassCrud.GetListCarTypeInfo(vin8); 
+            List<CarTypeInfo> list = ClassCrud.GetListCarTypeInfo(vin); 
             List<header> headerList = ClassCrud.GetHeaders();
 
             var result = new
@@ -61,9 +61,10 @@ namespace Toyota.Controllers
 
         [Route("/vehicle")]
         public IActionResult GetSpareParts(string group_id, string code_lang)
-        {   
-            List<SpareParts> list = ClassCrud.GetSpareParts(group_id, code_lang);   
-            return Json(list);
+        {
+            //List<SpareParts> list = ClassCrud.GetSpareParts(group_id, code_lang);   
+            DetailsInNode detailsInNode = ClassCrud.GetDetailsInNode(group_id, code_lang);
+            return Json(detailsInNode);
         }
 
         [Route("/vehicle/sgroups")]

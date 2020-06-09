@@ -14,11 +14,11 @@ namespace Toyota.Models
     public class ClassCrud
     {
         private static string strConn = Ut.GetMySQLConnect();
-        public static List<CarTypeInfo> GetListCarTypeInfo(string vin8)
+        public static List<CarTypeInfo> GetListCarTypeInfo(string vin)
         {
                 List<CarTypeInfo> list = null;
 
-                vin8 = vin8.Substring(0, 8);
+                vin = vin.Substring(0, 8);
                 try
                 {
                     #region strCommand
@@ -40,12 +40,12 @@ namespace Toyota.Models
                                         "   LEFT JOIN models m ON mc.catalog = m.catalog " +
                                         "   AND mc.catalog_code = m.catalog_code " +
                                         "   WHERE " +
-                                        "   mc.vin8 = @vin8;  ";
+                                        "   mc.vin8 = @vin;  ";
                 #endregion
 
                      using (IDbConnection db = new MySqlConnection(strConn))
                     {
-                        list = db.Query<CarTypeInfo>(strCommand, new { vin8 }).ToList();
+                        list = db.Query<CarTypeInfo>(strCommand, new { vin }).ToList();
                     }
                 }
                 catch(Exception ex)
@@ -59,13 +59,13 @@ namespace Toyota.Models
         public static List<ModelCar> GetModelCars()
         {
             List<ModelCar> list = null;
-            string strCommand = " SELECT CONCAT(m.catalog,'_', m.catalog_code) AS id, " +
-                                  " m.model_name AS  model, " +
-                                  " REPLACE(m.model_name, ' ', '-') AS 'seo_url' " +
+              string strCommand = " SELECT CONCAT(m.catalog,'_', m.catalog_code) model_id, " +
+                                  " REPLACE(m.model_name, ' ', '')  model, " +
+                                  " REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(m.model_name, '/', ''), '(', ''), ')', ''), '#', ''),'     '," +
+                                  "' '),',','-'),'  ',' '), ' ', '-'), '.', ''), '---', '-'),'--', '-') seo_url " +
                                   " FROM " +
                                   " models m " +
                                   " ORDER BY m.model_name; ";
-
             try
             {
                 using (IDbConnection db = new MySqlConnection(strConn))
@@ -137,38 +137,6 @@ namespace Toyota.Models
 
             return list;
         }
-        public static List<hotspots> GetHotspots(string catalog, string pic_code)
-        {
-            List<hotspots> list = null;
-            try
-            {
-                #region strCommand
-                string strCommand = " SELECT CONCAT(i.catalog, '_', i.cd) AS id, " +
-                                    " i.pic_code AS name, " +
-                                    " i.x1 AS min_x, " +
-                                    " i.x2 AS max_x, " +
-                                    " i.y1 AS min_y, " +
-                                    " i.y2 AS max_y " +
-                                    " FROM " +
-                                    " images i " +
-                                    " WHERE " +
-                                    " i.catalog = @catalog AND " +
-                                    " i.pic_code = @pic_code; ";
-                #endregion
-
-                using (IDbConnection db = new MySqlConnection(strConn))
-                {
-                    list = db.Query<hotspots>(strCommand, new { catalog, pic_code }).ToList();
-                }
-            }
-            catch (Exception ex)
-            {
-                string Error = ex.Message;
-                int o = 0;
-            }
-
-            return list;
-        }
         public static List<SpareParts> GetSpareParts(string group_id, string code_lang = "EU")
         {
             List<SpareParts> list = new List<SpareParts>();
@@ -196,7 +164,6 @@ namespace Toyota.Models
                                     " AND p.pnc IN " +
                                     " (SELECT pc.pnc FROM " +
                                     " part_codes pc " +
-
                                     " WHERE pc.catalog  = @catalog " +
                                     " AND p.code_lang = @code_lang " + 
                                     " AND pc.catalog_code = @catalog_code " +
@@ -229,7 +196,7 @@ namespace Toyota.Models
             {
                 for (int i = 0; i < list.Count; i++)
                 {
-                     list[i].hotspots = GetHotspots(catalog, list[i].image_id);
+                     list[i].hotspots = GetHotspots(group_id, code_lang);
                 }
             }
 
@@ -806,8 +773,6 @@ namespace Toyota.Models
 
             return model;
         }
-
-
         public static List<node> GetNodes(string [] codesArr =null, string[]  node_idsArr  = null)
         {
             List<node> list = new List<node>();
@@ -885,6 +850,123 @@ namespace Toyota.Models
                 string Error = ex.Message;
                 int o = 0;
             }
+            return list;
+        }
+        public static DetailsInNode GetDetailsInNode(string node_id, string lang = "EN")
+        {
+            string [] strArr = node_id.Split("_");
+
+            string catalog = strArr[0];
+            string catalog_code = strArr[1];
+            string group_id = strArr[2];
+
+            DetailsInNode detailsInNode = new DetailsInNode { node_id = node_id };
+
+            string strCommand = " SELECT desc_lang " +
+                                " FROM part_groups " +
+                                " WHERE catalog = @catalog " +
+                                " AND group_id = @group_id " +
+                                " AND code_lang = @lang " +
+                                " LIMIT 1; ";
+
+            string strCommDeatil = "  SELECT CONCAT(p.catalog, '_', p.pnc, '_', p.code_lang) number,  " +
+            " p.desc_lang name " +
+            " FROM " +
+            " pncs p " +
+            " WHERE " +
+            " p.pnc IN " +
+            " (SELECT DISTINCT pc.pnc " +
+            " FROM part_codes pc " +
+            " WHERE " +
+            " pc.catalog = @catalog " +
+            " AND pc.catalog_code = @catalog_code " +
+            " AND pc.part_group = @group_id) " +
+            " AND p.catalog = @catalog " +
+            " AND p.code_lang = @lang; ";
+
+
+             string strCommImages = " SELECT  " +
+                        " pc.pic_code id, " +
+                        " pc.img_format ext " +
+                        " FROM " +
+                        " pg_pictures pc " +
+                        " WHERE " +
+                        " pc.catalog = @catalog  " +
+                        " AND pc.catalog_code = @catalog_code " +
+                        " AND pc.part_group = @group_id ";
+
+            try
+            {
+                using (IDbConnection db = new MySqlConnection(strConn))
+                {
+                    detailsInNode.name = db.Query<string>(strCommand, new { catalog, group_id, lang }).FirstOrDefault();
+                    detailsInNode.parts = db.Query<Detail>(strCommDeatil, new { catalog, catalog_code, group_id, lang }).ToList();
+                    detailsInNode.images = db.Query<images>(strCommImages, new { catalog, catalog_code, group_id }).ToList();
+                }
+
+                List<hotspots> hotspots = GetHotspots(node_id, lang);
+
+                for (int i = 0; i < detailsInNode.parts.Count; i++)
+                {
+                    detailsInNode.parts[i].hotspots = hotspots;
+                }
+            }
+            catch (Exception ex)
+            {
+                string Error = ex.Message;
+                int y = 0;
+            }
+
+            return detailsInNode;
+        }
+        public static List<hotspots> GetHotspots(string node_id, string lang = "EN")
+        {
+            string[] strParam = node_id.Split("_");
+
+            string catalog = strParam[0];
+            string catalog_code = strParam[1];
+            string part_group = strParam[2];
+
+
+            if (!String.IsNullOrEmpty(lang))
+            {
+                strConn = Ut.GetMySQLConnect(lang);
+            }
+
+            List<hotspots> list = null;
+            try
+            {
+                #region strCommand
+                string strCommand = " SELECT " +
+                                    " CONCAT(catalog, '_', pic_code, '_', label2) hotspot_id, " +  
+                                    " CONCAT(pic_code, img_format) image_id, " +
+                                    "   x1, " +
+                                    "   y1, " +
+                                    "   x2, " +
+                                    "   y2 " +
+                                    " FROM images " +
+                                    " WHERE  " +
+                                    " catalog = @catalog AND " +
+                                    " pic_code IN " +
+                                    " (SELECT php1.pic_code " +
+                                    " FROM pg_header_pics php1 " +
+                                    " WHERE php1.catalog = @catalog " +
+                                    " AND php1.catalog_code = @catalog_code " +
+                                    " AND php1.part_group = @part_group ); ";
+
+                #endregion
+
+                using (IDbConnection db = new MySqlConnection(strConn))
+                {
+                    list = db.Query<hotspots>(strCommand, new { catalog, catalog_code, part_group }).ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                string Error = ex.Message;
+                int o = 0;
+            }
+
             return list;
         }
     }
