@@ -52,22 +52,22 @@ namespace Toyota.Controllers
             return Json(list);
         }
 
-        [Route("/mgroups")]
-        public IActionResult GetPartsGroups(string vehicle_id, string code_lang)
+        [Route("/vehicle/{vehicle_id:required}/mgroups")]
+        public IActionResult GetPartsGroups(string vehicle_id, string code_lang = "EN")
         {
             List<PartsGroup> list = ClassCrud.GetPartsGroup(vehicle_id, code_lang);
             return Json(list);
         }
 
         [Route("/vehicle")]
-        public IActionResult GetSpareParts(string group_id, string code_lang)
+        public IActionResult GetSpareParts(string group_id, string lang)
         {
             //List<SpareParts> list = ClassCrud.GetSpareParts(group_id, code_lang);   
-            DetailsInNode detailsInNode = ClassCrud.GetDetailsInNode(group_id, code_lang);
+            DetailsInNode detailsInNode = ClassCrud.GetDetailsInNode(group_id, lang);
             return Json(detailsInNode);
         }
 
-        [Route("/vehicle/sgroups")]
+        [Route("/vehicle/{vehicle_id:required}/sgroups")]
         public IActionResult GetSgroups(string vehicle_id, string group_id, string code_lang = "EN")
         {
             List<Sgroups> list = ClassCrud.GetSgroups(vehicle_id, group_id, code_lang);
@@ -119,7 +119,7 @@ namespace Toyota.Controllers
             return Json(list);
         }
 
-        [Route("/vehicleAttr")]
+        [Route("/vehicle/{vehicle_id:required}")]
         public IActionResult GetVehiclePropArr(string vehicle_id)
         {
             try
@@ -134,8 +134,8 @@ namespace Toyota.Controllers
         }
 
         [HttpPost]
-        [Route("/vehicle/sgroups")]
-        public IActionResult GetNodes(string [] codes, string [] node_ids)
+        [Route("/vehicle/{vehicle_id:required}/sgroups")]
+        public IActionResult GetNodes(string vehicle_id, string [] codes, string [] node_ids)
         {
             List<node> list = ClassCrud.GetNodes(codes, node_ids);
             return Json(list);

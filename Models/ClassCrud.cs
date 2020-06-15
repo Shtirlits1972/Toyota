@@ -59,13 +59,15 @@ namespace Toyota.Models
         public static List<ModelCar> GetModelCars()
         {
             List<ModelCar> list = null;
-              string strCommand = " SELECT CONCAT(m.catalog,'_', m.catalog_code) model_id, " +
-                                  " REPLACE(m.model_name, ' ', '')  model, " +
-                                  " REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(m.model_name, '/', ''), '(', ''), ')', ''), '#', ''),'     '," +
-                                  "' '),',','-'),'  ',' '), ' ', '-'), '.', ''), '---', '-'),'--', '-') seo_url " +
-                                  " FROM " +
-                                  " models m " +
-                                  " ORDER BY m.model_name; ";
+
+            #region MyRegion
+            string strCommand = " SELECT DISTINCT REPLACE(m.model_name, ' ', '') model_id, " +
+                                " m.model_name model, " +
+                                " REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(m.model_name, '/', ''), '(', ''), ')', ''), '#', ''),'     '," +
+                                "' '),',','-'),'  ',' '), ' ', '-'), '.', ''), '---', '-'),'--', '-') seo_url " +
+                                " FROM " +
+                                " models m ";
+            #endregion
             try
             {
                 using (IDbConnection db = new MySqlConnection(strConn))
@@ -73,7 +75,11 @@ namespace Toyota.Models
                     list = db.Query<ModelCar>(strCommand).ToList();
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                string Error = ex.Message;
+                int o = 0;
+            }
             return list;
         }
         public static List<PartsGroup> GetPartsGroup(string vehicle_id, string code_lang = "EN")
@@ -110,29 +116,29 @@ namespace Toyota.Models
         {
             List<header> list = new List<header>();
 
-            header header1 = new header { fid = "id", title = "ИД" };
+            header header1 = new header { code  = "id", title = "ИД" };
             list.Add(header1);
-            header header2 = new header { fid = "model_name", title = "Модель" };
+            header header2 = new header { code  = "model_name", title = "Модель" };
             list.Add(header2);
-            header header3 = new header { fid = "model_code", title = "Код модели" };
+            header header3 = new header { code  = "model_code", title = "Код модели" };
             list.Add(header3);
-            header header4 = new header { fid = "engine1", title = "Двигатель" };
+            header header4 = new header { code  = "engine1", title = "Двигатель" };
             list.Add(header4);
-            header header5 = new header { fid = "body", title = "Кузов" };
+            header header5 = new header { code  = "body", title = "Кузов" };
             list.Add(header5);
-            header header6 = new header { fid = "grade", title = "Класс" };
+            header header6 = new header { code  = "grade", title = "Класс" };
             list.Add(header6);
-            header header7 = new header { fid = "trans", title = "Трансмиссия" };
+            header header7 = new header { code  = "trans", title = "Трансмиссия" };
             list.Add(header7);
-            header header8 = new header { fid = "frame", title = "Серия" };
+            header header8 = new header { code  = "frame", title = "Серия" };
             list.Add(header8);
-            header header9 = new header { fid = "sysopt", title = "Сист опц" };
+            header header9 = new header { code  = "sysopt", title = "Сист опц" };
             list.Add(header9);
-            header header10 = new header { fid = "f1", title = "f1" };
+            header header10 = new header { code  = "f1", title = "f1" };
             list.Add(header10);
-            header header11 = new header { fid = "f2", title = "f2" };
+            header header11 = new header { code  = "f2", title = "f2" };
             list.Add(header11);
-            header header12 = new header { fid = "f3", title = "f3" };
+            header header12 = new header { code  = "f3", title = "f3" };
             list.Add(header12);
 
             return list;
