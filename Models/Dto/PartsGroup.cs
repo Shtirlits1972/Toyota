@@ -7,7 +7,7 @@ namespace Toyota.Models.Dto
 {
     public class PartsGroup
     {
-        public string Id { get; set; }
+        public string group_id { get; set; }
         public string name { get; set; }
         public List<Sgroups> childs { get; set; }
 

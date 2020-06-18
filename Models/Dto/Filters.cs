@@ -7,7 +7,8 @@ namespace Toyota.Models.Dto
 {
     public class Filters
     {
-        public string Id { get; set; }
+        public string ﬁlter_id { get; set; }
+        public string code { get; set; }
         public string name { get; set; }
 
         public List<values> values { get; set; }

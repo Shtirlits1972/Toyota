@@ -23,27 +23,25 @@ namespace Toyota.Models
                 {
                     #region strCommand
                     string strCommand = "  SELECT " +
-                                        "  CONCAT(mc.catalog, '_', mc.catalog_code, '_', mc.compl_code, '_', mc.sysopt) AS id, " +
-                                        "  m.model_name, " +
+                                        "  CONCAT(mc.catalog, '_', mc.catalog_code, '_', mc.compl_code, '_', mc.sysopt) vehicle_id, " +
+                                        "  mc.model_name, " +
+                                        "  mc.brand, " +
+                                        "  mc.catalog, " +
                                         "  mc.model_code, " +
-                                        "  mc.engine1, " +
-                                        "   mc.body, " +
-                                        "   mc.grade, " +
-                                        "   mc.trans, " +
-                                        "   mc.frame, " +
-                                        "   mc.sysopt, " +
-                                        "   mc.f1, " +
-                                        "   mc.f2, " +
-                                        "   mc.f3 " +
-                                        "   FROM " +
-                                        "   model_codes mc " +
-                                        "   LEFT JOIN models m ON mc.catalog = m.catalog " +
-                                        "   AND mc.catalog_code = m.catalog_code " +
-                                        "   WHERE " +
-                                        "   mc.vin8 = @vin;  ";
+                                        "  mc.add_codes, " +
+                                        "  mc.engine1 engine, " +
+                                        "  mc.prod_start, " +
+                                        "  mc.grade, " +
+                                        "  mc.atm_mtm, " +
+                                        "  mc.trans, " +
+                                        "  mc.f1 " +
+                                        "  FROM " +
+                                        "  model_codes mc " +
+                                        "  WHERE mc.vin8 = @vin;  ";
+
                 #endregion
 
-                     using (IDbConnection db = new MySqlConnection(strConn))
+                using (IDbConnection db = new MySqlConnection(strConn))
                     {
                         list = db.Query<CarTypeInfo>(strCommand, new { vin }).ToList();
                     }
@@ -56,23 +54,22 @@ namespace Toyota.Models
 
             return list;
         }
-        public static List<ModelCar> GetModelCars()
+        public static List<ModelCar> GetModelCars(string brand_id = "TOYOTA")
         {
             List<ModelCar> list = null;
 
             #region MyRegion
-            string strCommand = " SELECT DISTINCT REPLACE(m.model_name, ' ', '') model_id, " +
-                                " m.model_name model, " +
-                                " REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(m.model_name, '/', ''), '(', ''), ')', ''), '#', ''),'     '," +
+            string strCommand = " SELECT DISTINCT mc.model_id, mc.model_name model, " +
+                                " REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(mc.model_name, '/', ''), '(', ''), ')', ''), '#', ''),'     '," +
                                 "' '),',','-'),'  ',' '), ' ', '-'), '.', ''), '---', '-'),'--', '-') seo_url " +
-                                " FROM " +
-                                " models m ";
+                                " FROM model_codes mc " +
+                                " WHERE mc.brand = @brand_id ";
             #endregion
             try
             {
                 using (IDbConnection db = new MySqlConnection(strConn))
                 {
-                    list = db.Query<ModelCar>(strCommand).ToList();
+                    list = db.Query<ModelCar>(strCommand, new { brand_id }).ToList();
                 }
             }
             catch (Exception ex)
@@ -86,7 +83,7 @@ namespace Toyota.Models
         {
             List<PartsGroup> list = null;
             string strCommand = "   SELECT " +
-                                "   mgroup_num id, " +
+                                "   mgroup_num group_id, " +
                                 "   group_name name " +
                                 "   FROM " +
                                 "   mgroup_name; ";
@@ -100,7 +97,7 @@ namespace Toyota.Models
 
                             for(int i =0;i<list.Count; i++)
                             {
-                                 List<Sgroups> listSgroups = GetSgroups(vehicle_id, list[i].Id, code_lang );
+                                 List<Sgroups> listSgroups = GetSgroups(vehicle_id, list[i].group_id, code_lang );
                                  list[i].childs = listSgroups;
                             }
 
@@ -116,31 +113,30 @@ namespace Toyota.Models
         {
             List<header> list = new List<header>();
 
-            header header1 = new header { code  = "id", title = "ИД" };
-            list.Add(header1);
-            header header2 = new header { code  = "model_name", title = "Модель" };
-            list.Add(header2);
-            header header3 = new header { code  = "model_code", title = "Код модели" };
-            list.Add(header3);
-            header header4 = new header { code  = "engine1", title = "Двигатель" };
-            list.Add(header4);
-            header header5 = new header { code  = "body", title = "Кузов" };
-            list.Add(header5);
-            header header6 = new header { code  = "grade", title = "Класс" };
-            list.Add(header6);
-            header header7 = new header { code  = "trans", title = "Трансмиссия" };
-            list.Add(header7);
-            header header8 = new header { code  = "frame", title = "Серия" };
-            list.Add(header8);
-            header header9 = new header { code  = "sysopt", title = "Сист опц" };
-            list.Add(header9);
-            header header10 = new header { code  = "f1", title = "f1" };
-            list.Add(header10);
-            header header11 = new header { code  = "f2", title = "f2" };
-            list.Add(header11);
-            header header12 = new header { code  = "f3", title = "f3" };
-            list.Add(header12);
-
+            header vehicle_id = new header { code  = "vehicle_id", title = "ИД" };
+            list.Add(vehicle_id);
+            header model_name = new header { code  = "model_name", title = "Модель" };
+            list.Add(model_name);
+            header brand = new header { code = "brand", title = "Бренд" };
+            list.Add(brand);
+            header catalog = new header { code = "catalog", title = "Каталог" };
+            list.Add(catalog);
+            header model_code = new header { code  = "model_code", title = "Код модели" };
+            list.Add(model_code);
+            header add_codes = new header { code = "add_codes", title = "Доп коды" };
+            list.Add(add_codes);
+            header engine = new header { code  = "engine", title = "Двигатель" };
+            list.Add(engine);
+            header prod_start = new header { code = "prod_start", title = "Год выпуска" };
+            list.Add(prod_start);
+            header grade = new header { code = "grade", title = "Класс" };
+            list.Add(grade);
+            header atm_mtm = new header { code  = "atm_mtm", title = "Коробка передач" };
+            list.Add(atm_mtm);
+            header trans = new header { code  = "trans", title = "Трансмиссия" };
+            list.Add(trans);
+            header f1 = new header { code  = "f1", title = "f1" };
+            list.Add(f1);
             return list;
         }
         public static List<SpareParts> GetSpareParts(string group_id, string code_lang = "EU")
@@ -208,297 +204,790 @@ namespace Toyota.Models
 
             return list;
         }
-        public static List<Filters> GetFilters(string vin8)
+        public static List<Filters> GetFilters(string model_id, string[] param, string brand_id = "TOYOTA")
         {
-            vin8 = vin8.Substring(0, 8);
             List<Filters> filters = new List<Filters>();
-
             try
             {
-                #region Модель
-                List<string> modelList = new List<string>();
+                
 
-                   string modelCom = " SELECT DISTINCT m.model_name " +
-                                    " FROM model_codes mc " +
-                                    " LEFT JOIN models m ON mc.catalog = m.catalog " +
-                                    " AND mc.catalog_code = m.catalog_code " +
-                                    " WHERE mc.vin8 = @vin8; ";
+                #region string Where
+
+                string catalogWhereIN = "";
+                string model_codeWhereIN = "";
+                string add_codesWhereIN = "";
+                string prod_startWhereIN = "";
+                string engineWhereIN = "";
+                string gradeWhereIN = "";
+                string atm_mtmWhereIN = "";
+                string transWhereIN = "";
+                string f1WhereIN = "";
+
+                if (param.Length > 0)
+                {
+                    for(int i=0; i<param.Length; i++)
+                    {
+                        if (param[i].IndexOf("catalog") > -1)
+                        {
+                            if(String.IsNullOrEmpty(catalogWhereIN))
+                            {
+                                catalogWhereIN = " '" + param[i].Substring(param[i].IndexOf("catalog_") + "catalog_".Length, param[i].Length - (param[i].IndexOf("catalog_") + "catalog_".Length)) + "' ";
+                            }
+                            else
+                            {
+                                catalogWhereIN += ", '" + param[i].Substring(param[i].IndexOf("catalog_") + "catalog_".Length, param[i].Length - (param[i].IndexOf("catalog_") + "catalog_".Length)) + "' ";
+                            }
+                        }
+                        else if (param[i].IndexOf("model_code") > -1)
+                        {
+                            if (String.IsNullOrEmpty(model_codeWhereIN))
+                            {
+                                model_codeWhereIN = " '" + param[i].Substring(param[i].IndexOf("model_code_") + "model_code_".Length, param[i].Length - (param[i].IndexOf("model_code_") + "model_code_".Length)) + "' ";
+                            }
+                            else
+                            {
+                                model_codeWhereIN += ", '" + param[i].Substring(param[i].IndexOf("model_code_") + "model_code_".Length, param[i].Length - (param[i].IndexOf("model_code_") + "model_code_".Length)) + "' ";
+                            }
+                        }
+                        else if (param[i].IndexOf("add_codes") > -1)
+                        {
+                            if (String.IsNullOrEmpty(add_codesWhereIN))
+                            {
+                                add_codesWhereIN = " '" + param[i].Substring(param[i].IndexOf("add_codes_") + "add_codes_".Length, param[i].Length - (param[i].IndexOf("add_codes_") + "add_codes_".Length)) + "' ";
+                            }
+                            else
+                            {
+                                add_codesWhereIN += ", '" + param[i].Substring(param[i].IndexOf("add_codes_") + "add_codes_".Length, param[i].Length - (param[i].IndexOf("add_codes_") + "add_codes_".Length)) + "' ";
+                            }
+                        }
+                        else if (param[i].IndexOf("engine") > -1)
+                        {
+                            if (String.IsNullOrEmpty(engineWhereIN))
+                            {
+                                engineWhereIN = " '" + param[i].Substring(param[i].IndexOf("engine_") + "engine_".Length, param[i].Length - (param[i].IndexOf("engine_") + "engine_".Length)) + "' ";
+                            }
+                            else
+                            {
+                                engineWhereIN += ", '" + param[i].Substring(param[i].IndexOf("engine_") + "engine_".Length, param[i].Length - (param[i].IndexOf("engine_") + "engine_".Length)) + "' ";
+                            }
+                        }
+                        else if (param[i].IndexOf("prod_start") > -1)
+                        {
+                            if (String.IsNullOrEmpty(prod_startWhereIN))
+                            {
+                                prod_startWhereIN = " '" + param[i].Substring(param[i].IndexOf("prod_start_") + "prod_start_".Length, param[i].Length - (param[i].IndexOf("prod_start_") + "prod_start_".Length)) + "' ";
+                            }
+                            else
+                            {
+                                prod_startWhereIN += ", '" + param[i].Substring(param[i].IndexOf("prod_start_") + "prod_start_".Length, param[i].Length - (param[i].IndexOf("prod_start_") + "prod_start_".Length)) + "' ";
+                            }
+                        }
+                        else if (param[i].IndexOf("grade") > -1)
+                        {
+                            if (String.IsNullOrEmpty(gradeWhereIN))
+                            {
+                                gradeWhereIN = " '" + param[i].Substring(param[i].IndexOf("grade_") + "grade_".Length, param[i].Length - (param[i].IndexOf("grade_") + "grade_".Length)) + "' ";
+                            }
+                            else
+                            {
+                                gradeWhereIN += ", '" + param[i].Substring(param[i].IndexOf("grade_") + "grade_".Length, param[i].Length - (param[i].IndexOf("grade_") + "grade_".Length)) + "' ";
+                            }
+                        }
+                        else if (param[i].IndexOf("atm_mtm") > -1)
+                        {
+                            if (String.IsNullOrEmpty(atm_mtmWhereIN))
+                            {
+                                atm_mtmWhereIN = " '" + param[i].Substring(param[i].IndexOf("atm_mtm_") + "atm_mtm_".Length, param[i].Length - (param[i].IndexOf("atm_mtm_") + "atm_mtm_".Length)) + "' ";
+                            }
+                            else
+                            {
+                                atm_mtmWhereIN += ", '" + param[i].Substring(param[i].IndexOf("atm_mtm_") + "atm_mtm_".Length, param[i].Length - (param[i].IndexOf("atm_mtm_") + "atm_mtm_".Length)) + "' ";
+                            }
+                        }
+                        else if (param[i].IndexOf("trans") > -1)
+                        {
+                            if (String.IsNullOrEmpty(transWhereIN))
+                            {
+                                transWhereIN = " '" + param[i].Substring(param[i].IndexOf("trans_") + "trans_".Length, param[i].Length - (param[i].IndexOf("trans_") + "trans_".Length)) + "' ";
+                            }
+                            else
+                            {
+                                transWhereIN += ", '" + param[i].Substring(param[i].IndexOf("trans_") + "trans_".Length, param[i].Length - (param[i].IndexOf("trans_") + "trans_".Length)) + "' ";
+                            }
+                        }
+                        else if (param[i].IndexOf("f1") > -1)
+                        {
+                            if (String.IsNullOrEmpty(f1WhereIN))
+                            {
+                                f1WhereIN = " '" + param[i].Substring(param[i].IndexOf("f1_") + "f1_".Length, param[i].Length - (param[i].IndexOf("f1_") + "f1_".Length)) + "' ";
+                            }
+                            else
+                            {
+                                f1WhereIN += ", '" + param[i].Substring(param[i].IndexOf("f1_") + "f1_".Length, param[i].Length - (param[i].IndexOf("f1_") + "f1_".Length)) + "' ";
+                            }
+                        }
+                    }
+                }
+                #endregion
+
+                #region Модель
+
+                List<string> model_nameList = new List<string>();
+                string model_nameCom = " SELECT DISTINCT " +
+                                       " mc.model_name " +
+                                       " FROM model_codes mc " +
+                                       " WHERE mc.model_id = @model_id " +
+                                       " AND mc.brand = @brand_id ";
+
+                if (!String.IsNullOrEmpty(catalogWhereIN))
+                {
+                    model_nameCom += $" AND mc.catalog IN ({catalogWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(model_codeWhereIN))
+                {
+                    model_nameCom += $" AND mc.model_code IN ({model_codeWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(add_codesWhereIN))
+                {
+                    model_nameCom += $" AND mc.add_codes IN ({add_codesWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(prod_startWhereIN))
+                {
+                    model_nameCom += $" AND mc.prod_start IN ({prod_startWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(engineWhereIN))
+                {
+                    model_nameCom += $" AND mc.engine1 IN ({engineWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(gradeWhereIN))
+                {
+                    model_nameCom += $" AND mc.grade IN ({gradeWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(atm_mtmWhereIN))
+                {
+                    model_nameCom += $" AND mc.atm_mtm IN ({atm_mtmWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(transWhereIN))
+                {
+                    model_nameCom += $" AND mc.trans IN ({transWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(f1WhereIN))
+                {
+                    model_nameCom += $" AND mc.f1 IN ({f1WhereIN}) ";
+                }
 
                 using (IDbConnection db = new MySqlConnection(strConn))
                 {
-                    modelList = db.Query<string>(modelCom, new { vin8 }).ToList();
+                    model_nameList = db.Query<string>(model_nameCom, new { model_id, brand_id }).ToList();
                 }
-                Filters modelF = new Filters { Id = "1", name = "Модель" };
+
+                Filters modelF = new Filters { ﬁlter_id = "model_name", code = "model_name", name = "Модель" };
                 List<values> modelVal = new List<values>();
 
-                for (int i = 0; i < modelList.Count; i++)
+                for (int i = 0; i < model_nameList.Count; i++)
                 {
-                    values v1 = new values { Id = modelList[i], name = modelList[i] };
-                    modelVal.Add(v1);
+                    values model_v1 = new values { ﬁlter_item_id = "model_name_" + model_nameList[i], name = model_nameList[i] };
+                    modelVal.Add(model_v1);
                 }
 
                 modelF.values = modelVal;
                 filters.Add(modelF);
+
                 #endregion
 
-                #region Код модели
-                List<string> codeList = new List<string>();
+                #region Каталог
 
-                string codeCom = " SELECT DISTINCT mc.model_code " +
-                                 " FROM model_codes mc " +
-                                 " LEFT JOIN models m ON mc.catalog = m.catalog " +
-                                 " AND mc.catalog_code = m.catalog_code " +
-                                 " WHERE mc.vin8 = @vin8; ";
+                List<string> catalogList = new List<string>(); //   catalog
+
+                string catalogCom = " SELECT DISTINCT mc.catalog " +
+                                    " FROM model_codes mc " +
+                                    " WHERE mc.model_id = @model_id " +
+                                    " AND mc.brand = @brand_id ";
+
+                if(!String.IsNullOrEmpty(catalogWhereIN))
+                {
+                    catalogCom += $" AND mc.catalog IN ({catalogWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(model_codeWhereIN))
+                {
+                    catalogCom += $" AND mc.model_code IN ({model_codeWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(add_codesWhereIN))
+                {
+                    catalogCom += $" AND mc.add_codes IN ({add_codesWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(prod_startWhereIN))
+                {
+                    catalogCom += $" AND mc.prod_start IN ({prod_startWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(engineWhereIN))
+                {
+                    catalogCom += $" AND mc.engine1 IN ({engineWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(gradeWhereIN))
+                {
+                    catalogCom += $" AND mc.grade IN ({gradeWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(atm_mtmWhereIN))
+                {
+                    catalogCom += $" AND mc.atm_mtm IN ({atm_mtmWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(transWhereIN))
+                {
+                    catalogCom += $" AND mc.trans IN ({transWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(f1WhereIN))
+                {
+                    catalogCom += $" AND mc.f1 IN ({f1WhereIN}) ";
+                }
 
                 using (IDbConnection db = new MySqlConnection(strConn))
                 {
-                    codeList = db.Query<string>(codeCom, new { vin8 }).ToList();
+                    catalogList = db.Query<string>(catalogCom, new { model_id, brand_id }).ToList();
                 }
-                Filters codeF = new Filters { Id = "2", name = "Код модели" };
-                List<values> codeVal = new List<values>();
+                Filters catalogF = new Filters { ﬁlter_id = "catalog" , code = "catalog", name = "Регион" };
+                List<values> catalogVal = new List<values>();
 
-                for (int i = 0; i < codeList.Count; i++)
+                for (int i = 0; i < catalogList.Count; i++)
                 {
-                    values v1 = new values { Id = codeList[i], name = codeList[i] };
-                    codeVal.Add(v1);
+                    values v1 = new values { ﬁlter_item_id = "catalog_" + catalogList[i], name = catalogList[i] };
+                    catalogVal.Add(v1);
                 }
 
-                codeF.values = codeVal;
-                filters.Add(codeF);
+                catalogF.values = catalogVal;
+                filters.Add(catalogF);
+
                 #endregion
 
-                #region Двигатель
-                List<string> engList = new List<string>();
+                #region model_code
 
-                string engCom = " SELECT DISTINCT mc.engine1 " +
-                                 " FROM model_codes mc " +
-                                 " LEFT JOIN models m ON mc.catalog = m.catalog " +
-                                 " AND mc.catalog_code = m.catalog_code " +
-                                 " WHERE mc.vin8 = @vin8; ";
+                List<string> model_codeList = new List<string>(); //   model_code
+
+                string model_codeCom = " SELECT DISTINCT mc.model_code " +
+                                       " FROM model_codes mc " +
+                                       " WHERE mc.model_id = @model_id " +
+                                       " AND mc.brand = @brand_id ";
+
+                if (!String.IsNullOrEmpty(catalogWhereIN))
+                {
+                    model_codeCom += $" AND mc.catalog IN ({catalogWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(model_codeWhereIN))
+                {
+                    model_codeCom += $" AND mc.model_code IN ({model_codeWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(add_codesWhereIN))
+                {
+                    model_codeCom += $" AND mc.add_codes IN ({add_codesWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(prod_startWhereIN))
+                {
+                    model_codeCom += $" AND mc.prod_start IN ({prod_startWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(engineWhereIN))
+                {
+                    model_codeCom += $" AND mc.engine1 IN ({engineWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(gradeWhereIN))
+                {
+                    model_codeCom += $" AND mc.grade IN ({gradeWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(atm_mtmWhereIN))
+                {
+                    model_codeCom += $" AND mc.atm_mtm IN ({atm_mtmWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(transWhereIN))
+                {
+                    model_codeCom += $" AND mc.trans IN ({transWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(f1WhereIN))
+                {
+                    model_codeCom += $" AND mc.f1 IN ({f1WhereIN}) ";
+                }
 
                 using (IDbConnection db = new MySqlConnection(strConn))
                 {
-                    engList = db.Query<string>(engCom, new { vin8 }).ToList();
+                    model_codeList = db.Query<string>(model_codeCom, new { model_id, brand_id }).ToList();
                 }
-                Filters engF = new Filters { Id = "3", name = "Двигатель" };
-                List<values> engVal = new List<values>();
+                Filters model_codeF = new Filters { ﬁlter_id = "model_code", code = "model_code", name = "Код модели" };
+                List<values> model_codeVal = new List<values>();
 
-                for (int i = 0; i < engList.Count; i++)
+                for (int i = 0; i < model_codeList.Count; i++)
                 {
-                    values v1 = new values { Id = engList[i], name = engList[i] };
-                    engVal.Add(v1);
+                    values v1 = new values { ﬁlter_item_id = "model_code_" + model_codeList[i], name = model_codeList[i] };
+                    model_codeVal.Add(v1);
                 }
 
-                engF.values = engVal;
-                filters.Add(engF);
+                model_codeF.values = model_codeVal;
+                filters.Add(model_codeF);
+
                 #endregion
 
-                #region Кузов
-                List<string> bodyList = new List<string>();
+                #region add_codes
 
-                string bodyCom = " SELECT DISTINCT mc.body " +
-                                 " FROM model_codes mc " +
-                                 " LEFT JOIN models m ON mc.catalog = m.catalog " +
-                                 " AND mc.catalog_code = m.catalog_code " +
-                                 " WHERE mc.vin8 = @vin8; ";
+                List<string> add_codesList = new List<string>(); //   add_codes
+
+                string add_codesCom = " SELECT DISTINCT mc.add_codes " +
+                                       " FROM model_codes mc " +
+                                       " WHERE mc.model_id = @model_id " +
+                                       " AND mc.brand = @brand_id ";
+
+                #region WHERE
+                if (!String.IsNullOrEmpty(catalogWhereIN))
+                {
+                    add_codesCom += $" AND mc.catalog IN ({catalogWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(model_codeWhereIN))
+                {
+                    add_codesCom += $" AND mc.model_code IN ({model_codeWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(add_codesWhereIN))
+                {
+                    add_codesCom += $" AND mc.add_codes IN ({add_codesWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(prod_startWhereIN))
+                {
+                    add_codesCom += $" AND mc.prod_start IN ({prod_startWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(engineWhereIN))
+                {
+                    add_codesCom += $" AND mc.engine1 IN ({engineWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(gradeWhereIN))
+                {
+                    add_codesCom += $" AND mc.grade IN ({gradeWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(atm_mtmWhereIN))
+                {
+                    add_codesCom += $" AND mc.atm_mtm IN ({atm_mtmWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(transWhereIN))
+                {
+                    add_codesCom += $" AND mc.trans IN ({transWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(f1WhereIN))
+                {
+                    add_codesCom += $" AND mc.f1 IN ({f1WhereIN}) ";
+                } 
+                #endregion
 
                 using (IDbConnection db = new MySqlConnection(strConn))
                 {
-                    bodyList = db.Query<string>(bodyCom, new { vin8 }).ToList();
+                    add_codesList = db.Query<string>(add_codesCom, new { model_id, brand_id }).ToList();
                 }
-                Filters bodyF = new Filters { Id = "4", name = "Кузов" };
-                List<values> bodyVal = new List<values>();
+                Filters add_codesF = new Filters { ﬁlter_id = "add_codes", code = "add_codes", name = "Комплектация" };
+                List<values> add_codesVal = new List<values>();
 
-                for (int i = 0; i < bodyList.Count; i++)
+                for (int i = 0; i < add_codesList.Count; i++)
                 {
-                    values v1 = new values { Id = bodyList[i], name = bodyList[i] };
-                    bodyVal.Add(v1);
+                    values v1 = new values { ﬁlter_item_id = "add_codes_" + add_codesList[i], name = add_codesList[i] };
+                    add_codesVal.Add(v1);
                 }
 
-                bodyF.values = bodyVal;
-                filters.Add(bodyF);
+                add_codesF.values = add_codesVal;
+                filters.Add(add_codesF);
+
                 #endregion
 
-                #region Класс
-                List<string> gradeList = new List<string>();
+                #region prod_start
+
+                List<string> prod_startList = new List<string>(); //   prod_start
+
+                string prod_startCom = " SELECT DISTINCT mc.prod_start " +
+                                       " FROM model_codes mc " +
+                                       " WHERE mc.model_id = @model_id " +
+                                       " AND mc.brand = @brand_id ";
+
+                #region WHERE
+                if (!String.IsNullOrEmpty(catalogWhereIN))
+                {
+                    prod_startCom += $" AND mc.catalog IN ({catalogWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(model_codeWhereIN))
+                {
+                    prod_startCom += $" AND mc.model_code IN ({model_codeWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(add_codesWhereIN))
+                {
+                    prod_startCom += $" AND mc.add_codes IN ({add_codesWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(prod_startWhereIN))
+                {
+                    prod_startCom += $" AND mc.prod_start IN ({prod_startWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(engineWhereIN))
+                {
+                    prod_startCom += $" AND mc.engine1 IN ({engineWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(gradeWhereIN))
+                {
+                    prod_startCom += $" AND mc.grade IN ({gradeWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(atm_mtmWhereIN))
+                {
+                    prod_startCom += $" AND mc.atm_mtm IN ({atm_mtmWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(transWhereIN))
+                {
+                    prod_startCom += $" AND mc.trans IN ({transWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(f1WhereIN))
+                {
+                    prod_startCom += $" AND mc.f1 IN ({f1WhereIN}) ";
+                } 
+                #endregion
+
+                using (IDbConnection db = new MySqlConnection(strConn))
+                {
+                    prod_startList = db.Query<string>(prod_startCom, new { model_id, brand_id }).ToList();
+                }
+                Filters prod_startF = new Filters { ﬁlter_id = "prod_start", code = "prod_start", name = "Год выпуска" };
+                List<values> prod_startVal = new List<values>();
+
+                for (int i = 0; i < prod_startList.Count; i++)
+                {
+                    values v1 = new values { ﬁlter_item_id = "prod_start_" + prod_startList[i], name = prod_startList[i] };
+                    prod_startVal.Add(v1);
+                }
+
+                prod_startF.values = prod_startVal;
+                filters.Add(prod_startF);
+
+                #endregion
+
+                #region engine
+
+                List<string> engineList = new List<string>(); //   engine
+
+                 string engineCom = " SELECT DISTINCT mc.engine1 " +
+                                    " FROM model_codes mc " +
+                                    " WHERE mc.model_id = @model_id " +
+                                    " AND mc.brand = @brand_id ";
+
+                #region WHERE
+                if (!String.IsNullOrEmpty(catalogWhereIN))
+                {
+                    engineCom += $" AND mc.catalog IN ({catalogWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(model_codeWhereIN))
+                {
+                    engineCom += $" AND mc.model_code IN ({model_codeWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(add_codesWhereIN))
+                {
+                    engineCom += $" AND mc.add_codes IN ({add_codesWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(prod_startWhereIN))
+                {
+                    engineCom += $" AND mc.prod_start IN ({prod_startWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(engineWhereIN))
+                {
+                    engineCom += $" AND mc.engine1 IN ({engineWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(gradeWhereIN))
+                {
+                    engineCom += $" AND mc.grade IN ({gradeWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(atm_mtmWhereIN))
+                {
+                    engineCom += $" AND mc.atm_mtm IN ({atm_mtmWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(transWhereIN))
+                {
+                    engineCom += $" AND mc.trans IN ({transWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(f1WhereIN))
+                {
+                    engineCom += $" AND mc.f1 IN ({f1WhereIN}) ";
+                }
+                #endregion
+
+                using (IDbConnection db = new MySqlConnection(strConn))
+                {
+                    engineList = db.Query<string>(engineCom, new { model_id, brand_id }).ToList();
+                }
+                Filters engineF = new Filters { ﬁlter_id = "engine", code = "engine", name = "Двигатель" };
+                List<values> engineVal = new List<values>();
+
+                for (int i = 0; i < engineList.Count; i++)
+                {
+                    values v1 = new values { ﬁlter_item_id = "engine_" + engineList[i], name = engineList[i] };
+                    engineVal.Add(v1);
+                }
+
+                engineF.values = engineVal;
+                filters.Add(engineF);
+
+                #endregion
+
+                #region grade
+
+                List<string> gradeList = new List<string>(); //   grade
 
                 string gradeCom = " SELECT DISTINCT mc.grade " +
-                                 " FROM model_codes mc " +
-                                 " LEFT JOIN models m ON mc.catalog = m.catalog " +
-                                 " AND mc.catalog_code = m.catalog_code " +
-                                 " WHERE mc.vin8 = @vin8; ";
+                                   " FROM model_codes mc " +
+                                   " WHERE mc.model_id = @model_id " +
+                                   " AND mc.brand = @brand_id ";
+
+                #region WHERE
+                if (!String.IsNullOrEmpty(catalogWhereIN))
+                {
+                    gradeCom += $" AND mc.catalog IN ({catalogWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(model_codeWhereIN))
+                {
+                    gradeCom += $" AND mc.model_code IN ({model_codeWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(add_codesWhereIN))
+                {
+                    gradeCom += $" AND mc.add_codes IN ({add_codesWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(prod_startWhereIN))
+                {
+                    gradeCom += $" AND mc.prod_start IN ({prod_startWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(engineWhereIN))
+                {
+                    gradeCom += $" AND mc.engine1 IN ({engineWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(gradeWhereIN))
+                {
+                    gradeCom += $" AND mc.grade IN ({gradeWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(atm_mtmWhereIN))
+                {
+                    gradeCom += $" AND mc.atm_mtm IN ({atm_mtmWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(transWhereIN))
+                {
+                    gradeCom += $" AND mc.trans IN ({transWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(f1WhereIN))
+                {
+                    gradeCom += $" AND mc.f1 IN ({f1WhereIN}) ";
+                }
+                #endregion
 
                 using (IDbConnection db = new MySqlConnection(strConn))
                 {
-                    gradeList = db.Query<string>(gradeCom, new { vin8 }).ToList();
+                    gradeList = db.Query<string>(gradeCom, new { model_id, brand_id }).ToList();
                 }
-                Filters gradeF = new Filters { Id = "5", name = "Класс" };
+                Filters gradeF = new Filters { ﬁlter_id = "grade", code = "grade", name = "Класс" };
                 List<values> gradeVal = new List<values>();
 
                 for (int i = 0; i < gradeList.Count; i++)
                 {
-                    values v1 = new values { Id = gradeList[i], name = gradeList[i] };
+                    values v1 = new values { ﬁlter_item_id = "grade_" + gradeList[i], name = gradeList[i] };
                     gradeVal.Add(v1);
                 }
 
                 gradeF.values = gradeVal;
                 filters.Add(gradeF);
+
                 #endregion
 
-                #region Трансмиссия
-                List<string> transList = new List<string>();
+                #region atm_mtm
 
-                string transCom = " SELECT DISTINCT mc.trans " +
-                                 " FROM model_codes mc " +
-                                 " LEFT JOIN models m ON mc.catalog = m.catalog " +
-                                 " AND mc.catalog_code = m.catalog_code " +
-                                 " WHERE mc.vin8 = @vin8; ";
+                List<string> atm_mtmList = new List<string>(); //   atm_mtm
+
+                string atm_mtmCom = " SELECT DISTINCT mc.atm_mtm " +
+                                   " FROM model_codes mc " +
+                                   " WHERE mc.model_id = @model_id " +
+                                   " AND mc.brand = @brand_id ";
+
+                #region WHERE
+                if (!String.IsNullOrEmpty(catalogWhereIN))
+                {
+                    atm_mtmCom += $" AND mc.catalog IN ({catalogWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(model_codeWhereIN))
+                {
+                    atm_mtmCom += $" AND mc.model_code IN ({model_codeWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(add_codesWhereIN))
+                {
+                    atm_mtmCom += $" AND mc.add_codes IN ({add_codesWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(prod_startWhereIN))
+                {
+                    atm_mtmCom += $" AND mc.prod_start IN ({prod_startWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(engineWhereIN))
+                {
+                    atm_mtmCom += $" AND mc.engine1 IN ({engineWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(gradeWhereIN))
+                {
+                    atm_mtmCom += $" AND mc.grade IN ({gradeWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(atm_mtmWhereIN))
+                {
+                    atm_mtmCom += $" AND mc.atm_mtm IN ({atm_mtmWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(transWhereIN))
+                {
+                    atm_mtmCom += $" AND mc.trans IN ({transWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(f1WhereIN))
+                {
+                    atm_mtmCom += $" AND mc.f1 IN ({f1WhereIN}) ";
+                }
+                #endregion
 
                 using (IDbConnection db = new MySqlConnection(strConn))
                 {
-                    transList = db.Query<string>(transCom, new { vin8 }).ToList();
+                    atm_mtmList = db.Query<string>(atm_mtmCom, new { model_id, brand_id }).ToList();
                 }
-                Filters transF = new Filters { Id = "6", name = "Трансмиссия" };
+                Filters atm_mtmF = new Filters { ﬁlter_id = "atm_mtm", code = "atm_mtm", name = "Коробка передач" };
+                List<values> atm_mtmVal = new List<values>();
+
+                for (int i = 0; i < atm_mtmList.Count; i++)
+                {
+                    values v1 = new values { ﬁlter_item_id = "atm_mtm_" + atm_mtmList[i], name = atm_mtmList[i] };
+                    atm_mtmVal.Add(v1);
+                }
+
+                atm_mtmF.values = atm_mtmVal;
+                filters.Add(atm_mtmF);
+
+                #endregion
+
+                #region trans
+
+                List<string> transList = new List<string>(); //   trans
+
+                string transCom = " SELECT DISTINCT mc.trans " +
+                                   " FROM model_codes mc " +
+                                   " WHERE mc.model_id = @model_id " +
+                                   " AND mc.brand = @brand_id ";
+
+                #region WHERE
+                if (!String.IsNullOrEmpty(catalogWhereIN))
+                {
+                    transCom += $" AND mc.catalog IN ({catalogWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(model_codeWhereIN))
+                {
+                    transCom += $" AND mc.model_code IN ({model_codeWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(add_codesWhereIN))
+                {
+                    transCom += $" AND mc.add_codes IN ({add_codesWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(prod_startWhereIN))
+                {
+                    transCom += $" AND mc.prod_start IN ({prod_startWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(engineWhereIN))
+                {
+                    transCom += $" AND mc.engine1 IN ({engineWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(gradeWhereIN))
+                {
+                    transCom += $" AND mc.grade IN ({gradeWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(atm_mtmWhereIN))
+                {
+                    transCom += $" AND mc.atm_mtm IN ({atm_mtmWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(transWhereIN))
+                {
+                    transCom += $" AND mc.trans IN ({transWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(f1WhereIN))
+                {
+                    transCom += $" AND mc.f1 IN ({f1WhereIN}) ";
+                }
+                #endregion
+
+                using (IDbConnection db = new MySqlConnection(strConn))
+                {
+                    transList = db.Query<string>(transCom, new { model_id, brand_id }).ToList();
+                }
+                Filters transF = new Filters { ﬁlter_id = "trans", code = "trans", name = "Трансмиссия" };
                 List<values> transVal = new List<values>();
 
                 for (int i = 0; i < transList.Count; i++)
                 {
-                    values v1 = new values { Id = transList[i], name = transList[i] };
+                    values v1 = new values { ﬁlter_item_id = "trans_" + transList[i], name = transList[i] };
                     transVal.Add(v1);
                 }
 
                 transF.values = transVal;
                 filters.Add(transF);
-                #endregion
 
-                #region Серия
-                List<string> frameList = new List<string>();
-
-                string frameCom = " SELECT DISTINCT mc.frame " +
-                                 " FROM model_codes mc " +
-                                 " LEFT JOIN models m ON mc.catalog = m.catalog " +
-                                 " AND mc.catalog_code = m.catalog_code " +
-                                 " WHERE mc.vin8 = @vin8; ";
-
-                using (IDbConnection db = new MySqlConnection(strConn))
-                {
-                    frameList = db.Query<string>(frameCom, new { vin8 }).ToList();
-                }
-                Filters frameF = new Filters { Id = "7", name = "Серия" };
-                List<values> frameVal = new List<values>();
-
-                for (int i = 0; i < frameList.Count; i++)
-                {
-                    values v1 = new values { Id = frameList[i], name = frameList[i] };
-                    frameVal.Add(v1);
-                }
-
-                frameF.values = frameVal;
-                filters.Add(frameF);
-                #endregion
-
-                #region Сист.опц
-                List<string> sysoptList = new List<string>();
-
-                string sysoptCom = " SELECT DISTINCT mc.sysopt " +
-                                 " FROM model_codes mc " +
-                                 " LEFT JOIN models m ON mc.catalog = m.catalog " +
-                                 " AND mc.catalog_code = m.catalog_code " +
-                                 " WHERE mc.vin8 = @vin8; ";
-
-                using (IDbConnection db = new MySqlConnection(strConn))
-                {
-                    sysoptList = db.Query<string>(sysoptCom, new { vin8 }).ToList();
-                }
-                Filters sysoptF = new Filters { Id = "8", name = "Сист.опц" };
-                List<values> sysoptVal = new List<values>();
-
-                for (int i = 0; i < sysoptList.Count; i++)
-                {
-                    values v1 = new values { Id = sysoptList[i], name = sysoptList[i] };
-                    sysoptVal.Add(v1);
-                }
-
-                sysoptF.values = sysoptVal;
-                filters.Add(sysoptF);
                 #endregion
 
                 #region f1
-                List<string> f1List = new List<string>();
 
-                string f1Com = " SELECT DISTINCT mc.f1 " +
-                                 " FROM model_codes mc " +
-                                 " LEFT JOIN models m ON mc.catalog = m.catalog " +
-                                 " AND mc.catalog_code = m.catalog_code " +
-                                 " WHERE mc.vin8 = @vin8; ";
+                List<string> f1List = new List<string>(); //   f1
+
+                 string f1Com = " SELECT DISTINCT mc.f1 " +
+                                " FROM model_codes mc " +
+                                " WHERE mc.model_id = @model_id " +
+                                " AND mc.brand = @brand_id ";
+
+                #region WHERE
+                if (!String.IsNullOrEmpty(catalogWhereIN))
+                {
+                    f1Com += $" AND mc.catalog IN ({catalogWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(model_codeWhereIN))
+                {
+                    f1Com += $" AND mc.model_code IN ({model_codeWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(add_codesWhereIN))
+                {
+                    f1Com += $" AND mc.add_codes IN ({add_codesWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(prod_startWhereIN))
+                {
+                    f1Com += $" AND mc.prod_start IN ({prod_startWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(engineWhereIN))
+                {
+                    f1Com += $" AND mc.engine1 IN ({engineWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(gradeWhereIN))
+                {
+                    f1Com += $" AND mc.grade IN ({gradeWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(atm_mtmWhereIN))
+                {
+                    f1Com += $" AND mc.atm_mtm IN ({atm_mtmWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(transWhereIN))
+                {
+                    f1Com += $" AND mc.trans IN ({transWhereIN}) ";
+                }
+                if (!String.IsNullOrEmpty(f1WhereIN))
+                {
+                    f1Com += $" AND mc.f1 IN ({f1WhereIN}) ";
+                }
+                #endregion
+
+                if (!String.IsNullOrEmpty(f1WhereIN))
+                {
+                    f1Com += $" AND mc.f1 IN ({f1WhereIN}) ";
+                }
 
                 using (IDbConnection db = new MySqlConnection(strConn))
                 {
-                    f1List = db.Query<string>(f1Com, new { vin8 }).ToList();
+                    f1List = db.Query<string>(f1Com, new { model_id, brand_id }).ToList();
                 }
-                Filters f1F = new Filters { Id = "9", name = "f1" };
+                Filters f1F = new Filters { ﬁlter_id = "f1", code = "f1", name = "Руль" };
                 List<values> f1Val = new List<values>();
 
                 for (int i = 0; i < f1List.Count; i++)
                 {
-                    values v1 = new values { Id = f1List[i], name = f1List[i] };
+                    values v1 = new values { ﬁlter_item_id = "f1_" + f1List[i], name = f1List[i] };
                     f1Val.Add(v1);
                 }
 
                 f1F.values = f1Val;
                 filters.Add(f1F);
-                #endregion
 
-                #region f2
-                List<string> f2List = new List<string>();
-
-                string f2Com = " SELECT DISTINCT mc.f2 " +
-                                 " FROM model_codes mc " +
-                                 " LEFT JOIN models m ON mc.catalog = m.catalog " +
-                                 " AND mc.catalog_code = m.catalog_code " +
-                                 " WHERE mc.vin8 = @vin8; ";
-
-                using (IDbConnection db = new MySqlConnection(strConn))
-                {
-                    f2List = db.Query<string>(f2Com, new { vin8 }).ToList();
-                }
-                Filters f2F = new Filters { Id = "10", name = "f2" };
-                List<values> f2Val = new List<values>();
-
-                for (int i = 0; i < f2List.Count; i++)
-                {
-                    values v1 = new values { Id = f2List[i], name = f2List[i] };
-                    f2Val.Add(v1);
-                }
-
-                f2F.values = f2Val;
-                filters.Add(f2F);
-                #endregion
-
-                #region f3
-                List<string> f3List = new List<string>();
-
-                string f3Com = " SELECT DISTINCT mc.f3 " +
-                                 " FROM model_codes mc " +
-                                 " LEFT JOIN models m ON mc.catalog = m.catalog " +
-                                 " AND mc.catalog_code = m.catalog_code " +
-                                 " WHERE mc.vin8 = @vin8; ";
-
-                using (IDbConnection db = new MySqlConnection(strConn))
-                {
-                    f3List = db.Query<string>(f3Com, new { vin8 }).ToList();
-                }
-                Filters f3F = new Filters { Id = "11", name = "f3" };
-                List<values> f3Val = new List<values>();
-
-                for (int i = 0; i < f3List.Count; i++)
-                {
-                    values v1 = new values { Id = f3List[i], name = f3List[i] };
-                    f3Val.Add(v1);
-                }
-
-                f3F.values = f3Val;
-                filters.Add(f3F);
                 #endregion
             }
             catch (Exception ex)
@@ -557,7 +1046,7 @@ namespace Toyota.Models
 
             return list;
         }
-        public static List<CarTypeInfo> GetListCarTypeInfoFilterCars(string vin8, string [] param)
+        public static List<CarTypeInfo> GetListCarTypeInfoFilterCars(string model_id, string [] param, string brand_id = "TOYOTA")
         {
                 List<CarTypeInfo> list = null;
 
@@ -569,59 +1058,39 @@ namespace Toyota.Models
                     }
                 }
 
-                vin8 = vin8.Substring(0, 8);
-
-               string model_name = param[0];
-               string model_code = param[1];
-               string engine1 = param[2];
-               string body = param[3];
-               string grade = param[4];
-               string trans = param[5];
-               string frame = param[6];
-               string sysopt = param[7];
-               string f1 = param[8];
-               string f2 = param[9];
-               string f3 = param[10];
-
             try
             {
                 #region strCommand
-                string strCommand = " SELECT " +
-                                    "  CONCAT(mc.catalog, '_', mc.catalog_code, '_', mc.compl_code, '_', mc.sysopt) AS id, " +
-                                    "  m.model_name, " +
-                                    "   mc.model_code, " +
-                                    "   mc.engine1, " +
-                                    "   mc.body, " +
-                                    "   mc.grade, " +
-                                    "   mc.trans, " +
-                                    "   mc.frame, " +
-                                    "   mc.sysopt, " +
-                                    "   mc.f1, " +
-                                    "   mc.f2, " +
-                                    "   mc.f3 " +
-                                    "   FROM " +
-                                    "   model_codes mc " +
-                                    "   LEFT JOIN models m ON mc.catalog = m.catalog " +
-                                    "   AND mc.catalog_code = m.catalog_code " +
-                                    "   WHERE " +
-                                    "   mc.vin8 = @vin8 " +
-                                    "   AND m.model_name = @model_name " +
-                                    "   AND mc.model_code = @model_code " +
-                                    "   AND mc.engine1 = @engine1 " +
-                                    "   AND mc.body = @body " +
-                                    "   AND mc.grade = @grade " +
-                                    "   AND mc.trans = @trans " +
-                                    "   AND mc.frame = @frame " +
-                                    "   AND mc.sysopt = @sysopt " +
-                                    "   AND mc.f1 = @f1 " +
-                                    "   AND mc.f2 = @f2 " +
-                                    "   AND mc.f3 = @f3 ;";
+                string strCommand = "  SELECT " +
+                                    "  CONCAT(mc.catalog, '_', mc.catalog_code, '_', mc.compl_code, '_', mc.sysopt) vehicle_id, " +
+                                    "  mc.model_name, " +
+                                    "  mc.brand, " +
+                                    "  mc.catalog, " +
+                                    "  mc.model_code, " +
+                                    "  mc.add_codes, " +
+                                    "  mc.engine1 engine, " +
+                                    "  mc.prod_start, " +
+                                    "  mc.grade, " +
+                                    "  mc.atm_mtm, " +
+                                    "  mc.trans, " +
+                                    "  mc.f1 " +
+                                    " FROM model_codes mc " +
+                                    " WHERE mc.model_id = @model_id " +
+                                    " AND mc.brand = @brand_id ";
+
+                if(param.Length > 0)
+                {
+                    string strWhere = GetWhereFromFilter(param);
+                    strCommand += strWhere;
+                    int o = 0;
+                }
+
                 #endregion
 
                 using (IDbConnection db = new MySqlConnection(strConn))
-                    {
-                        list = db.Query<CarTypeInfo>(strCommand, new { vin8, model_name, model_code, engine1, body, grade, trans, frame, sysopt, f1, f2, f3 }).ToList();
-                    }
+                {
+                    list = db.Query<CarTypeInfo>(strCommand, new { model_id, brand_id }).ToList();
+                }
                 }
                 catch(Exception ex)
                 {
@@ -673,38 +1142,30 @@ namespace Toyota.Models
         {
             List<attributes> list = new List<attributes>();
 
-            attributes cmodnamepc = new attributes { code = "model_name", name = "Модель автомобиля", value = "" };
-            list.Add(cmodnamepc);
-
-            attributes xcardrs = new attributes { code = "model_code", name = "Код модели", value = "" };
-            list.Add(xcardrs);
-
-            attributes dmodyr = new attributes { code = "engine1", name = "Двигатель", value = "" };
-            list.Add(dmodyr);
-
-            attributes xgradefulnam = new attributes { code = "body", name = "Кузов", value = "" };
-            list.Add(xgradefulnam);
-
-            attributes ctrsmtyp = new attributes { code = "grade", name = "Класс", value = "" };
-            list.Add(ctrsmtyp);
-
-            attributes cmftrepc = new attributes { code = "trans", name = "Трансмиссия", value = "" };
-            list.Add(cmftrepc);
-
-            attributes carea = new attributes { code = "frame", name = "Серия", value = "" };
-            list.Add(carea);
-
-            attributes sysopt = new attributes { code = "sysopt", name = "Сист.Опц.", value = "" };
-            list.Add(sysopt);
-
-            attributes f1 = new attributes { code = "f1", name = "f1", value = "" };
+            attributes vehicle_id = new attributes { code = "vehicle_id", name = "ИД", value = "" };
+            list.Add(vehicle_id);
+            attributes model_name = new attributes { code = "model_name", name = "Модель автомобиля", value = "" };
+            list.Add(model_name);
+            attributes brand = new attributes { code = "brand", name = "Бренд", value = "" };
+            list.Add(brand);
+            attributes catalog = new attributes { code = "catalog", name = "Каталог", value = "" };
+            list.Add(catalog);
+            attributes model_code = new attributes { code = "model_code", name = "Код модели", value = "" };
+            list.Add(model_code);
+            attributes add_codes = new attributes { code = "add_codes", name = "Доп коды", value = "" };
+            list.Add(add_codes);
+            attributes engine = new attributes { code = "engine", name = "Двигатель", value = "" };
+            list.Add(engine);
+            attributes prod_start = new attributes { code = "prod_start", name = "Год выпуска", value = "" };
+            list.Add(prod_start);
+            attributes grade = new attributes { code = "grade", name = "Класс", value = "" };
+            list.Add(grade);
+            attributes atm_mtm = new attributes { code = "atm_mtm", name = "Коробка передач", value = "" };
+            list.Add(atm_mtm);
+            attributes trans = new attributes { code = "trans", name = "Трансмиссия", value = "" };
+            list.Add(trans);
+            attributes f1 = new attributes { code = "f1", name = "Руль", value = "" };
             list.Add(f1);
-
-            attributes f2 = new attributes { code = "f2", name = "f2", value = "" };
-            list.Add(f2);
-
-            attributes f3 = new attributes { code = "f3", name = "f3", value = "" };
-            list.Add(f3);
 
             return list;
         }
@@ -723,29 +1184,30 @@ namespace Toyota.Models
                     string compl_code = strArr[2];
                     string sysopt = strArr[3];
 
+
                     #region strCommand
-                    string strCommand = " SELECT " +
-                                        " CONCAT(mc.catalog, '_', mc.catalog_code, '_', mc.compl_code, '_', mc.sysopt) AS id, " +
-                                        " m.model_name,   " +
-                                        " mc.model_code,   " +
-                                        " mc.engine1,  " +
-                                        " mc.body,  " +
-                                        " mc.grade,  " +
-                                        " mc.trans, " +
-                                        " mc.frame,  " +
-                                        " mc.sysopt, " +
-                                        " mc.f1,  " +
-                                        " mc.f2, " +
-                                        " mc.f3 " +
-                                        " FROM " +
-                                        " model_codes mc " +
-                                        " LEFT JOIN models m ON mc.catalog = m.catalog " +
-                                        " AND mc.catalog_code = m.catalog_code " +
-                                        " WHERE " +
+                    string strCommand = "  SELECT " +
+                                        "  CONCAT(mc.catalog, '_', mc.catalog_code, '_', mc.compl_code, '_', mc.sysopt) vehicle_id, " +
+                                        "  mc.model_name, " +
+                                        "  mc.brand, " +
+                                        "  mc.catalog, " +
+                                        "  mc.model_code, " +
+                                        "  mc.add_codes, " +
+                                        "  mc.engine1 engine, " +
+                                        "  mc.prod_start, " +
+                                        "  mc.grade, " +
+                                        "  mc.atm_mtm, " +
+                                        "  mc.trans, " +
+                                        "  mc.f1 " +
+                                        "  FROM " +
+                                        "  model_codes mc " +
+                                        "  WHERE " +
                                         " mc.catalog = @catalog " +
                                         " AND mc.catalog_code = @catalog_code " +
                                         " AND mc.compl_code = @compl_code " +
                                         " AND mc.sysopt = @sysopt  LIMIT 1; ";
+
+
                     #endregion
 
                     using (IDbConnection db = new MySqlConnection(strConn))
@@ -754,17 +1216,33 @@ namespace Toyota.Models
 
                         List<attributes> list = GetAttributes();
 
-                        list[0].value = carType.model_name;
-                        list[1].value = carType.model_code;
-                        list[2].value = carType.engine1;
-                        list[3].value = carType.body;
-                        list[4].value = carType.grade;
-                        list[5].value = carType.trans;
-                        list[6].value = carType.frame;
-                        list[7].value = carType.sysopt;
-                        list[8].value = carType.f1;
-                        list[9].value = carType.f2;
-                        list[10].value = carType.f3;
+                        #region MyRegion
+                        //vehicle_id 
+                        //model_name
+                        //brand
+                        //catalog
+                        //model_code
+                        //add_codes
+                        //engine
+                        //prod_start
+                        //grade
+                        //atm_mtm
+                        //trans
+                        //f1 
+                        #endregion
+
+                        list[0].value = carType.vehicle_id;
+                        list[1].value = carType.model_name;
+                        list[2].value = carType.brand;
+                        list[3].value = carType.catalog;
+                        list[4].value = carType.model_code;
+                        list[5].value = carType.add_codes;
+                        list[6].value = carType.engine;
+                        list[7].value = carType.prod_start;
+                        list[8].value = carType.grade;
+                        list[9].value = carType.atm_mtm;
+                        list[10].value = carType.trans;
+                        list[11].value = carType.f1;
 
                         model = new VehiclePropArr { model_name = carType.model_name };
                         model.attributes = list;
@@ -858,7 +1336,7 @@ namespace Toyota.Models
             }
             return list;
         }
-        public static DetailsInNode GetDetailsInNode(string node_id, string lang = "EN")
+        public static DetailsInNode GetDetailsInNode(string node_id, string lang = "EN", string brand_id = "TOYOTA")
         {
             string [] strArr = node_id.Split("_");
 
@@ -892,14 +1370,15 @@ namespace Toyota.Models
 
 
              string strCommImages = " SELECT  " +
-                        " pc.pic_code id, " +
-                        " pc.img_format ext " +
-                        " FROM " +
-                        " pg_pictures pc " +
-                        " WHERE " +
-                        " pc.catalog = @catalog  " +
-                        " AND pc.catalog_code = @catalog_code " +
-                        " AND pc.part_group = @group_id ";
+                                    " pc.pic_code image_id, " +
+                                    " pc.img_format ext, " +
+                                   $" CONCAT('{brand_id}', '/', pc.catalog, '/', 'grimages', '/', pc.pic_code, pc.img_format ) path " +
+                                    " FROM " +
+                                    " pg_pictures pc " +
+                                    " WHERE " +
+                                    " pc.catalog = @catalog  " +
+                                    " AND pc.catalog_code = @catalog_code " +
+                                    " AND pc.part_group = @group_id ";
 
             try
             {
@@ -974,6 +1453,57 @@ namespace Toyota.Models
             }
 
             return list;
+        }
+        private static string GetWhereFromFilter(string[] param)
+        {
+            string strRes = "";
+          //  string []  strKeys = { "model_name", "catalog", "model_code", "add_codes", "engine", "prod_start", "grade", "atm_mtm", "trans", "f1" };
+
+            Dictionary<string, string> dict = new Dictionary<string, string>();
+
+            dict.Add("model_name", "model_name");
+            dict.Add("catalog", "catalog");
+            dict.Add("model_code", "model_code");
+            dict.Add("add_codes", "add_codes");
+            dict.Add("engine", "engine1"); //  не совпадает!
+            dict.Add("prod_start", "prod_start");
+            dict.Add("grade", "grade");
+            dict.Add("atm_mtm", "atm_mtm");
+            dict.Add("trans", "trans");
+            dict.Add("f1", "f1");
+
+            Array.Sort(param, StringComparer.InvariantCulture);
+            if (param.Length > 0)
+            {
+                foreach (KeyValuePair<string, string> pair in dict)
+                {
+                    string innerStr = string.Empty;
+                    for (int i = 0; i < param.Length; i++)
+                    {
+                        string strTemp = param[i];
+
+                        if (strTemp.IndexOf(pair.Key) > -1)
+                        {
+                            string strKey = pair.Key + "_";
+                            if (String.IsNullOrEmpty(innerStr))
+                            {
+                                innerStr = " '" + strTemp.Substring(strTemp.IndexOf(strKey) + strKey.Length, strTemp.Length - (strTemp.IndexOf(strKey) + strKey.Length)) + "' ";
+                            }
+                            else
+                            {
+                                innerStr += ", '" + strTemp.Substring(strTemp.IndexOf(strKey) + strKey.Length, strTemp.Length - (strTemp.IndexOf(strKey) + strKey.Length)) + "' ";
+                            }
+                        }
+                    }
+
+                    if(!String.IsNullOrEmpty(innerStr))
+                    {
+                        strRes += $" AND mc.{pair.Value} IN ({innerStr}) ";
+                    }
+                 }
+             }
+
+            return strRes;
         }
     }
 }

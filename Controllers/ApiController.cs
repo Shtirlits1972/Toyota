@@ -7,6 +7,7 @@ using Toyota.Models.Dto;
 using Toyota.Models;
 using System.IO;
 using System.Configuration;
+using System.Net.Http;
 
 namespace Toyota.Controllers
 {
@@ -32,7 +33,7 @@ namespace Toyota.Controllers
         [Route("/image")]
         public IActionResult GetImage(string image_id)
         {
-
+            //  TOYOTA/EU/grimages/47A909C.png
             string FilderImagePath = Ut.GetImagePath();  //"wwwroot/image/";
             string fullPath = FilderImagePath + image_id;
 
@@ -46,9 +47,9 @@ namespace Toyota.Controllers
         }
 
         [Route("/models")]
-        public IActionResult GetModels()
+        public IActionResult GetModels(string brand_id = "TOYOTA")
         {
-            List<ModelCar> list = ClassCrud.GetModelCars();
+            List<ModelCar> list = ClassCrud.GetModelCars(brand_id);
             return Json(list);
         }
 
@@ -58,12 +59,11 @@ namespace Toyota.Controllers
             List<PartsGroup> list = ClassCrud.GetPartsGroup(vehicle_id, code_lang);
             return Json(list);
         }
-
-        [Route("/vehicle")]
-        public IActionResult GetSpareParts(string group_id, string lang)
-        {
-            //List<SpareParts> list = ClassCrud.GetSpareParts(group_id, code_lang);   
-            DetailsInNode detailsInNode = ClassCrud.GetDetailsInNode(group_id, lang);
+ 
+        [Route("/vehicle/{vehicle_id:required}/sgroups/{node_id:required}")]
+        public IActionResult GetSpareParts(string vehicle_id, string node_id, string lang, string brand_id = "TOYOTA")
+        { 
+            DetailsInNode detailsInNode = ClassCrud.GetDetailsInNode(node_id, lang, brand_id);
             return Json(detailsInNode);
         }
 
@@ -74,35 +74,29 @@ namespace Toyota.Controllers
             return Json(list);
         }
 
-        [Route("/ﬁlters")]
-        public IActionResult GetFilters(string vin8)
+        [Route("/ﬁlters")]   //  [FromQuery] and [FromRoute]
+        public IActionResult GetFilters(string model_id, [FromQuery(Name = "params")] string[] param, string brand_id = "TOYOTA")  //  
         {
-            List<Filters> list = ClassCrud.GetFilters(vin8);   
+            List<Filters> list = ClassCrud.GetFilters(model_id,  param, brand_id);
             return Json(list);
         }
 
         [Route("/ﬁlter-cars")]
-        public IActionResult GetListCarTypeInfoFilterCars(string vin8, string [] param, int page=1, int page_size=10)
+        public IActionResult GetListCarTypeInfoFilterCars(string model_id, [FromQuery(Name = "params")] string[] param, string brand_id = "TOYOTA", int page=1, int page_size=10)
         {
-            if(param.Length == 11)
+            List<header> headerList = ClassCrud.GetHeaders();
+            List<CarTypeInfo> list = ClassCrud.GetListCarTypeInfoFilterCars(model_id, param, brand_id); // 
+
+            list = list.Skip((page - 1) * page_size).Take(page_size).ToList();
+
+            var result = new
             {
-                List<header> headerList = ClassCrud.GetHeaders();
-                List<CarTypeInfo> list = ClassCrud.GetListCarTypeInfoFilterCars(vin8, param); // 
-
-                list = list.Skip((page - 1) * page_size).Take(page_size).ToList();
-
-                var result = new
-                {
-                    headers = headerList,
-                    items = list,
-                    cntitems = list.Count,
-                    page = page
-                };
-
-                return Json(result);
-            }
-
-            return NotFound("Проверьте параметры запроса!");
+                headers = headerList,
+                items = list,
+                cntitems = list.Count,
+                page = page
+            };
+            return Json(result);
         }
 
         [Route("/locales")]

@@ -7,7 +7,7 @@ namespace Toyota.Models.Dto
 {
     public class values
     {
-        public string Id { get; set; }
+        public string ﬁlter_item_id { get; set; }
         public string name { get; set; }
 
         public override string ToString()

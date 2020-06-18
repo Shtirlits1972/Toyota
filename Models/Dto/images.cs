@@ -7,11 +7,12 @@ namespace Toyota.Models.Dto
 {
     public class images
     {
-        public string id { get; set; }
+        public string image_id { get; set; }
         public string ext { get; set; }
+        public string path { get; set; }
         public override string ToString()
         {
-            return $"{id} {ext}";
+            return $"{image_id} {ext}";
         }
     }
 }
