@@ -8,6 +8,7 @@ using Toyota.Models;
 using System.IO;
 using System.Configuration;
 using System.Net.Http;
+using System.Net;
 
 namespace Toyota.Controllers
 {
@@ -17,33 +18,57 @@ namespace Toyota.Controllers
         public IActionResult GetListCarTypeInfo(string vin)
         {
             List<CarTypeInfo> list = ClassCrud.GetListCarTypeInfo(vin); 
-            List<header> headerList = ClassCrud.GetHeaders();
+            List<header> headerList = ClassCrud.GetHeaders(12);
 
             var result = new
             {
-                headers = headerList,
+                header = headerList,
                 items = list,
-                cntitems = list.Count,
+                cnt_items = list.Count,
                 page = 1
             };
 
             return Json(result);
         }
 
-        [Route("/image")]
-        public IActionResult GetImage(string image_id)
+        [Route("/image/{image_id}")]
+        public async Task<byte[]> GetImageAsync(string image_id)
         {
-            //  TOYOTA/EU/grimages/47A909C.png
-            string FilderImagePath = Ut.GetImagePath();  //"wwwroot/image/";
-            string fullPath = FilderImagePath + image_id;
+            //  http://185.101.204.28:4489/toyota/EU/images_eu_a1/090002A.png
+            //   EU_A1_47A909C.png
+            string[] strArr = image_id.Split("_");
 
-            if(System.IO.File.Exists(fullPath))
+            string fullPath = Ut.GetImagePath() + strArr[0] + "/images_" + strArr[0].ToLower() + "_" + strArr[1].ToLower() + "/" + strArr[2];
+
+            try
             {
-                byte[] file = System.IO.File.ReadAllBytes(fullPath);
-                return Ok(file);
+                using (var handler = new HttpClientHandler())
+                {
+                    using (var client = new HttpClient(handler))
+                    {
+                        // var bytes = client.GetByteArrayAsync(fullPath);
+                        byte [] result = await client.GetByteArrayAsync(fullPath);
+                        return result;
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                string Error = ex.Message;
+                int o = 0;
             }
 
-            return NotFound("Картинка не найдена.");
+            #region MyRegion
+            //if (System.IO.File.Exists(fullPath))
+            //{
+            //    byte[] file = System.IO.File.ReadAllBytes(fullPath);
+            //    return Ok(file);
+            //} 
+            #endregion
+
+            byte[] notImage = new byte[0];
+
+            return notImage;
         }
 
         [Route("/models")]
@@ -59,41 +84,53 @@ namespace Toyota.Controllers
             List<PartsGroup> list = ClassCrud.GetPartsGroup(vehicle_id, code_lang);
             return Json(list);
         }
- 
-        [Route("/vehicle/{vehicle_id:required}/sgroups/{node_id:required}")]
+
+        [Route("/vehicle/{vehicle_id:required}/sgroups/{node_id:required}")]   //   5
         public IActionResult GetSpareParts(string vehicle_id, string node_id, string lang, string brand_id = "TOYOTA")
         { 
             DetailsInNode detailsInNode = ClassCrud.GetDetailsInNode(node_id, lang, brand_id);
             return Json(detailsInNode);
         }
 
+        [HttpPost]    //   6.1
         [Route("/vehicle/{vehicle_id:required}/sgroups")]
-        public IActionResult GetSgroups(string vehicle_id, string group_id, string code_lang = "EN")
+        public IActionResult GetSgroups(string vehicle_id, string group_id, string[] codes, string[] node_ids, string code_lang = "EN")
         {
-            List<Sgroups> list = ClassCrud.GetSgroups(vehicle_id, group_id, code_lang);
-            return Json(list);
+
+            if(!String.IsNullOrEmpty(group_id) )
+            {
+                List<Sgroups> list = ClassCrud.GetSgroups(vehicle_id, group_id, code_lang);
+                return Json(list);
+            }
+            else if((codes != null && codes.Length > 0) || (node_ids != null && node_ids.Length>0 ))
+            {
+                List<node> list = ClassCrud.GetNodes(codes, node_ids);
+                return Json(list);
+            }
+
+            return NotFound("Проверте параметры!");
         }
 
-        [Route("/ﬁlters")]   //  [FromQuery] and [FromRoute]
-        public IActionResult GetFilters(string model_id, [FromQuery(Name = "params")] string[] param, string brand_id = "TOYOTA")  //  
+        [Route("/filters")]   //  [FromQuery] and [FromRoute]
+        public IActionResult GetFilters(string model_id, [FromQuery(Name = "params[]")] string[] param, string brand_id = "TOYOTA")  
         {
             List<Filters> list = ClassCrud.GetFilters(model_id,  param, brand_id);
             return Json(list);
         }
 
-        [Route("/ﬁlter-cars")]
-        public IActionResult GetListCarTypeInfoFilterCars(string model_id, [FromQuery(Name = "params")] string[] param, string brand_id = "TOYOTA", int page=1, int page_size=10)
+        [Route("/filter-cars")]
+        public IActionResult GetListCarTypeInfoFilterCars(string model_id, [FromQuery(Name = "params[]")] string[] param, string brand_id = "TOYOTA", int page=1, int page_size=10)
         {
-            List<header> headerList = ClassCrud.GetHeaders();
+            List<header> headerList = ClassCrud.GetHeaders(5);
             List<CarTypeInfo> list = ClassCrud.GetListCarTypeInfoFilterCars(model_id, param, brand_id); // 
 
             list = list.Skip((page - 1) * page_size).Take(page_size).ToList();
 
             var result = new
             {
-                headers = headerList,
+                header = headerList,
                 items = list,
-                cntitems = list.Count,
+                cnt_items = list.Count,
                 page = page
             };
             return Json(result);
@@ -127,13 +164,13 @@ namespace Toyota.Controllers
             }
         }
 
-        [HttpPost]
-        [Route("/vehicle/{vehicle_id:required}/sgroups")]
-        public IActionResult GetNodes(string vehicle_id, string [] codes, string [] node_ids)
-        {
-            List<node> list = ClassCrud.GetNodes(codes, node_ids);
-            return Json(list);
-        }
+        //[HttpPost]
+        //[Route("/vehicle/{vehicle_id:required}/sgroups")]
+        //public IActionResult GetNodes(string vehicle_id, string[] codes, string[] node_ids)
+        //{
+        //    List<node> list = ClassCrud.GetNodes(codes, node_ids);
+        //    return Json(list);
+        //}
 
     }
 }

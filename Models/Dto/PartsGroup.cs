@@ -9,8 +9,7 @@ namespace Toyota.Models.Dto
     {
         public string group_id { get; set; }
         public string name { get; set; }
-        public List<Sgroups> childs { get; set; }
-
+        public List<PartsGroup> childs { get; set; }
         public override string ToString()
         {
             return name;

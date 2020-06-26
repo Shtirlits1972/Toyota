@@ -8,12 +8,12 @@ namespace Toyota.Models.Dto
     public class ModelCar
     {
         public  string model_id { get; set; }  //  
-        public string model { get; set; }
+        public string name { get; set; }
         public string seo_url { get; set; }
 
         public override string ToString()
         {
-            return model;
+            return name;
         }
     }
 }
