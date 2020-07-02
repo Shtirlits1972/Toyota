@@ -8,6 +8,7 @@ using Dapper;
 using Toyota.Models.Dto;
 using MySql.Data;
 using MySql.Data.MySqlClient;
+using Org.BouncyCastle.Asn1.Ocsp;
 
 namespace Toyota.Models
 {
@@ -111,7 +112,6 @@ namespace Toyota.Models
             }
             return list;
         }
-
         public static List<PartsGroup> GetPartsGroupChild(string vehicle_id, string group_id, string code_lang = "EN")
         {
             List<PartsGroup> list = null;
@@ -157,7 +157,6 @@ namespace Toyota.Models
             }
             return list;
         }
-
         public static List<header> GetHeaders(int qty=5)
         {
             List<header> list = new List<header>();
@@ -223,9 +222,11 @@ namespace Toyota.Models
                                     " AND pc.catalog_code = @catalog_code " +
                                     " AND pc.part_group = @part_group ))t1 " +
                                     " ON pc.pnc = t1.pnc " +
+
                                     " LEFT JOIN  pg_pictures pp ON pc.catalog = pp.catalog " +
                                     " AND pc.catalog_code = pp.catalog_code " +
                                     " AND pc.part_group = pp.part_group " +
+
                                     " LEFT JOIN pic_desc pd ON pc.catalog = pd.catalog " +
                                     " AND pc.catalog_code = pd.catalog_code " +
                                     " AND pp.pic_desc_code = pd.pic_num " +
@@ -1068,9 +1069,9 @@ namespace Toyota.Models
                 #region strCommand
                 //    EU_A1_47A909C.png
                 string strCommand = " SELECT  DISTINCT " +
-                                    " CONCAT(php1.catalog, '_', php1.catalog_code, '_', php1.part_group) node_id, " +
+                                    " CONCAT(php1.catalog, '_', php1.catalog_code, '_', php1.part_group, '_', php1.pic_code) node_id, " +
                                     " t1.name, " +
-                                    " CONCAT( LOWER(php1.catalog),'_', LOWER(i.cd), '_', php1.pic_code, i.img_format ) image_id,  " +
+                                    " REPLACE(CONCAT( LOWER(php1.catalog),'_', LOWER(i.cd), '_', php1.pic_code, i.img_format ), '.', '-') image_id,  " +
                                     " '.png' image_ext  " +
                                     " FROM pg_header_pics php1 " +
                                     " LEFT JOIN " +
@@ -1387,6 +1388,12 @@ namespace Toyota.Models
         }
         public static DetailsInNode GetDetailsInNode(string node_id, string lang = "EN", string brand_id = "TOYOTA")
         {
+
+            if(String.IsNullOrEmpty(lang))
+            {
+                lang = "EN";
+            }
+
             string imgPath = Ut.GetImagePath();
 
             string[] strArr = node_id.Split("_");
@@ -1394,8 +1401,9 @@ namespace Toyota.Models
             string catalog = strArr[0];
             string catalog_code = strArr[1];
             string group_id = strArr[2];
+            string pic_code = strArr[3];
 
-            DetailsInNode detailsInNode = new DetailsInNode { group_id = node_id };
+            DetailsInNode detailsInNode = new DetailsInNode { node_id = node_id };
 
             string strCommand = " SELECT desc_lang " +
                                 " FROM part_groups " +
@@ -1404,10 +1412,12 @@ namespace Toyota.Models
                                 " AND code_lang = @lang " +
                                 " LIMIT 1; ";
 
-            string strCommDeatil = "  SELECT CONCAT(p.catalog, '_', p.pnc, '_', p.code_lang) number,  " +
+            string strCommDeatil = "  SELECT  DISTINCT  pc2.part_code number,  " +
             " p.desc_lang name " +
             " FROM " +
             " pncs p " +
+            " INNER JOIN part_codes pc2 ON p.catalog = pc2.catalog " +
+            " AND p.pnc = pc2.pnc " +
             " WHERE " +
             " p.pnc IN " +
             " (SELECT DISTINCT pc.pnc " +
@@ -1417,15 +1427,17 @@ namespace Toyota.Models
             " AND pc.catalog_code = @catalog_code " +
             " AND pc.part_group = @group_id) " +
             " AND p.catalog = @catalog " +
-            " AND p.code_lang = @lang; ";
-
+            " AND p.code_lang = @lang " +
+            " AND pc2.catalog = @catalog " +
+            " AND pc2.catalog_code = @catalog_code " +
+            " AND pc2.part_group = @group_id ";
 
             #region strCommImages
 
-        //    http://185.101.204.28:4489/toyota/EU/
+            //    http://185.101.204.28:4489/toyota/EU/
 
-             string strCommImages = " SELECT  DISTINCT " +
-                                    " CONCAT(i.catalog, '_', i.cd, '_',  i.pic_code, i.img_format) image_id, " +
+            string strCommImages = " SELECT  DISTINCT " +
+                                    " REPLACE(CONCAT(i.catalog, '_', i.cd, '_',  i.pic_code, i.img_format), '.', '-') image_id, " +
                                     " i.img_format ext, " +
                                    $" CONCAT('{imgPath}', i.catalog, '/', CONCAT(LOWER( CONCAT('images', '_', i.catalog, '_', i.cd)), '/',  i.pic_code, i.img_format)) path " +
                                     " FROM images i " +
@@ -1433,6 +1445,8 @@ namespace Toyota.Models
                                     " i.pic_code = pg.pic_code " +
                                     " WHERE pg.catalog = @catalog " +
                                     " AND pg.catalog_code = @catalog_code " +
+                                    " AND i.pic_code = @pic_code " +
+                                    " AND pg.pic_code = @pic_code " +
                                     " AND pg.part_group = @group_id; ";
             #endregion
 
@@ -1442,7 +1456,7 @@ namespace Toyota.Models
                 {
                     detailsInNode.name = db.Query<string>(strCommand, new { catalog, group_id, lang }).FirstOrDefault();
                     detailsInNode.parts = db.Query<Detail>(strCommDeatil, new { catalog, catalog_code, group_id, lang }).ToList();
-                    detailsInNode.images = db.Query<images>(strCommImages, new { catalog, catalog_code, group_id }).ToList();
+                    detailsInNode.images = db.Query<images>(strCommImages, new { catalog, catalog_code, group_id, pic_code }).ToList();
                 }
 
                 List<hotspots> hotspots = GetHotspots(node_id, lang);
@@ -1467,7 +1481,9 @@ namespace Toyota.Models
             string catalog = strParam[0];
             string catalog_code = strParam[1];
             string part_group = strParam[2];
+            string pic_code = strParam[3];
 
+            string imgPath = Ut.GetImagePath();
 
             if (!String.IsNullOrEmpty(lang))
             {
@@ -1478,9 +1494,10 @@ namespace Toyota.Models
             try
             {
                 #region strCommand
-                string strCommand = " SELECT " +
-                                    " CONCAT(catalog, '_', pic_code, '_', label2) hotspot_id, " +
-                                    " CONCAT(LOWER(CONCAT(catalog, '_', cd, '_')), pic_code, img_format) image_id, " +
+                string strCommand = " SELECT DISTINCT " +
+                                    " label2 hotspot_id, " +
+                                   //    " CONCAT(LOWER(CONCAT(catalog, '_', cd, '_')), pic_code, img_format) image_id, " +
+                                   $"  REPLACE(CONCAT(CONCAT(UPPER(catalog), '_', UPPER(cd)), '_',  pic_code, img_format), '.', '-') image_id, " +
                                     "   x1, " +
                                     "   y1, " +
                                     "   x2, " +
@@ -1488,18 +1505,13 @@ namespace Toyota.Models
                                     " FROM images " +
                                     " WHERE  " +
                                     " catalog = @catalog AND " +
-                                    " pic_code IN " +
-                                    " (SELECT php1.pic_code " +
-                                    " FROM pg_header_pics php1 " +
-                                    " WHERE php1.catalog = @catalog " +
-                                    " AND php1.catalog_code = @catalog_code " +
-                                    " AND php1.part_group = @part_group ); ";
+                                    " pic_code  = @pic_code; ";
 
                 #endregion
 
                 using (IDbConnection db = new MySqlConnection(strConn))
                 {
-                    list = db.Query<hotspots>(strCommand, new { catalog, catalog_code, part_group }).ToList();
+                    list = db.Query<hotspots>(strCommand, new { catalog, pic_code }).ToList();
                 }
             }
             catch (Exception ex)

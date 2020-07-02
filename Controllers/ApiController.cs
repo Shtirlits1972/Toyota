@@ -31,13 +31,31 @@ namespace Toyota.Controllers
             return Json(result);
         }
 
+        #region MyRegion
+        //public static byte[] GetImage(string image_name)
+        //{
+        //    string path = @"C:\BmwEtk\images\w_grafik\" + image_name.Replace("-", ".");
+        //    byte[] b = new byte[0];
+        //    try { b = File.ReadAllBytes(path); } catch (Exception ee) { ErrorLog("Error in GetImage() image_name=" + image_name + " - " + ee.Message, 2); }
+        //    return b;
+        //}
+
+        //[HttpGet("image/{image_id}")]
+        //public FileContentResult GetImage(string image_id)
+        //{
+        //    return File(DBClass.GetImage(image_id), "image/png");
+        //} 
+        #endregion
+
         [Route("/image/{image_id}")]
-        public async Task<byte[]> GetImageAsync(string image_id)
+        public async Task<FileContentResult> GetImageAsync(string image_id)
         {
             //  http://185.101.204.28:4489/toyota/EU/images_eu_a1/090002A.png
             //   EU_A1_47A909C.png
-            string[] strArr = image_id.Split("_");
+            //   eu_a1_MT0856A-png
 
+            string[] strArr = image_id.Replace("-",".").Split("_");
+            byte[] result = new byte[0];
             string fullPath = Ut.GetImagePath() + strArr[0] + "/images_" + strArr[0].ToLower() + "_" + strArr[1].ToLower() + "/" + strArr[2];
 
             try
@@ -46,9 +64,7 @@ namespace Toyota.Controllers
                 {
                     using (var client = new HttpClient(handler))
                     {
-                        // var bytes = client.GetByteArrayAsync(fullPath);
-                        byte [] result = await client.GetByteArrayAsync(fullPath);
-                        return result;
+                       result = await client.GetByteArrayAsync(fullPath);
                     }
                 }
             }
@@ -58,17 +74,7 @@ namespace Toyota.Controllers
                 int o = 0;
             }
 
-            #region MyRegion
-            //if (System.IO.File.Exists(fullPath))
-            //{
-            //    byte[] file = System.IO.File.ReadAllBytes(fullPath);
-            //    return Ok(file);
-            //} 
-            #endregion
-
-            byte[] notImage = new byte[0];
-
-            return notImage;
+            return File(result, "image/png");
         }
 
         [Route("/models")]
@@ -79,27 +85,46 @@ namespace Toyota.Controllers
         }
 
         [Route("/vehicle/{vehicle_id:required}/mgroups")]
-        public IActionResult GetPartsGroups(string vehicle_id, string code_lang = "EN")
+        public IActionResult GetPartsGroups(string vehicle_id)
         {
-            List<PartsGroup> list = ClassCrud.GetPartsGroup(vehicle_id, code_lang);
+            string lang = "EN";
+            if (!String.IsNullOrEmpty(Request.Headers["lang"].ToString()))
+            {
+                lang = Request.Headers["lang"].ToString();
+            }
+
+            List<PartsGroup> list = ClassCrud.GetPartsGroup(vehicle_id, lang);
             return Json(list);
         }
 
+
+        //  /vehicle/EU_252230_007_515G/sgroups/EU_252230_1201
         [Route("/vehicle/{vehicle_id:required}/sgroups/{node_id:required}")]   //   5
-        public IActionResult GetSpareParts(string vehicle_id, string node_id, string lang, string brand_id = "TOYOTA")
-        { 
+        public IActionResult GetSpareParts(string vehicle_id, string node_id, string brand_id = "TOYOTA")
+        {
+            string lang = "EN";
+            if(!String.IsNullOrEmpty(Request.Headers["lang"].ToString()))
+            {
+                lang = Request.Headers["lang"].ToString();
+            }
+
             DetailsInNode detailsInNode = ClassCrud.GetDetailsInNode(node_id, lang, brand_id);
             return Json(detailsInNode);
         }
 
         [HttpPost]    //   6.1
         [Route("/vehicle/{vehicle_id:required}/sgroups")]
-        public IActionResult GetSgroups(string vehicle_id, string group_id, string[] codes, string[] node_ids, string code_lang = "EN")
+        public IActionResult GetSgroups(string vehicle_id, string group_id, string[] codes, string[] node_ids)
         {
-
-            if(!String.IsNullOrEmpty(group_id) )
+            string lang = "EN";
+            if (!String.IsNullOrEmpty(Request.Headers["lang"].ToString()))
             {
-                List<Sgroups> list = ClassCrud.GetSgroups(vehicle_id, group_id, code_lang);
+                lang = Request.Headers["lang"].ToString();
+            }
+
+            if (!String.IsNullOrEmpty(group_id) )
+            {
+                List<Sgroups> list = ClassCrud.GetSgroups(vehicle_id, group_id, lang);
                 return Json(list);
             }
             else if((codes != null && codes.Length > 0) || (node_ids != null && node_ids.Length>0 ))

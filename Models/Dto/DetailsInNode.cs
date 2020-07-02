@@ -8,7 +8,7 @@ namespace Toyota.Models.Dto
     public class DetailsInNode
     {
         // список деталей в узле
-        public string group_id { get; set; }
+        public string node_id { get; set; }
         public string name { get; set; }
         public List<Detail> parts { get; set; }
         public List<images> images { get; set; }
