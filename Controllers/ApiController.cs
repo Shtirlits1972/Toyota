@@ -116,11 +116,13 @@ namespace Toyota.Controllers
         [Route("/vehicle/{vehicle_id:required}/sgroups")]
         public IActionResult GetSgroups(string vehicle_id, string group_id, string[] codes, string[] node_ids)
         {
+            #region lang
             string lang = "EN";
             if (!String.IsNullOrEmpty(Request.Headers["lang"].ToString()))
             {
                 lang = Request.Headers["lang"].ToString();
-            }
+            } 
+            #endregion
 
             if (!String.IsNullOrEmpty(group_id) )
             {
