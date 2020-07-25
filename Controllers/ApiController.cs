@@ -15,37 +15,23 @@ namespace Toyota.Controllers
     public class ApiController : Controller
     {
         [Route("/vehicle/vin")]
-        public IActionResult GetListCarTypeInfo(string vin)
+        public IActionResult GetListCarTypeInfo(string vin, int page = 1, [FromQuery(Name = "per-page")] int qty = 10)
         {
             List<CarTypeInfo> list = ClassCrud.GetListCarTypeInfo(vin); 
-            List<header> headerList = ClassCrud.GetHeaders(12);
+            List<header> headerList = ClassCrud.GetHeaders(8);
+
+            List<CarTypeInfo> items = list.Skip((page - 1) * qty).Take(qty).ToList();
 
             var result = new
             {
                 header = headerList,
-                items = list,
+                items,
                 cnt_items = list.Count,
-                page = 1
+                page
             };
 
             return Json(result);
         }
-
-        #region MyRegion
-        //public static byte[] GetImage(string image_name)
-        //{
-        //    string path = @"C:\BmwEtk\images\w_grafik\" + image_name.Replace("-", ".");
-        //    byte[] b = new byte[0];
-        //    try { b = File.ReadAllBytes(path); } catch (Exception ee) { ErrorLog("Error in GetImage() image_name=" + image_name + " - " + ee.Message, 2); }
-        //    return b;
-        //}
-
-        //[HttpGet("image/{image_id}")]
-        //public FileContentResult GetImage(string image_id)
-        //{
-        //    return File(DBClass.GetImage(image_id), "image/png");
-        //} 
-        #endregion
 
         [Route("/image/{image_id}")]
         public async Task<FileContentResult> GetImageAsync(string image_id)
@@ -96,14 +82,12 @@ namespace Toyota.Controllers
             List<PartsGroup> list = ClassCrud.GetPartsGroup(vehicle_id, lang);
             return Json(list);
         }
-
-
         //  /vehicle/EU_252230_007_515G/sgroups/EU_252230_1201
         [Route("/vehicle/{vehicle_id:required}/sgroups/{node_id:required}")]   //   5
         public IActionResult GetSpareParts(string vehicle_id, string node_id, string brand_id = "TOYOTA")
         {
             string lang = "EN";
-            if(!String.IsNullOrEmpty(Request.Headers["lang"].ToString()))
+            if (!String.IsNullOrEmpty(Request.Headers["lang"].ToString()))
             {
                 lang = Request.Headers["lang"].ToString();
             }
@@ -111,6 +95,7 @@ namespace Toyota.Controllers
             DetailsInNode detailsInNode = ClassCrud.GetDetailsInNode(node_id, lang, brand_id);
             return Json(detailsInNode);
         }
+
 
         [HttpPost]    //   6.1
         [Route("/vehicle/{vehicle_id:required}/sgroups")]
@@ -148,7 +133,7 @@ namespace Toyota.Controllers
         [Route("/filter-cars")]
         public IActionResult GetListCarTypeInfoFilterCars(string model_id, [FromQuery(Name = "params[]")] string[] param, string brand_id = "TOYOTA", int page=1, int page_size=10)
         {
-            List<header> headerList = ClassCrud.GetHeaders(5);
+            List<header> headerList = ClassCrud.GetHeaders(8);
             List<CarTypeInfo> list = ClassCrud.GetListCarTypeInfoFilterCars(model_id, param, brand_id); // 
 
             list = list.Skip((page - 1) * page_size).Take(page_size).ToList();
