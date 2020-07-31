@@ -51,12 +51,6 @@ namespace Toyota
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
-                //endpoints.MapControllers();     // нет определенных маршрутов
-
-                //endpoints.MapControllerRoute(
-                //name: "mgroups",
-                //pattern: "/vehicle/{vehicle_id}/mgroups");
-
             });
         }
     }

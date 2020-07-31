@@ -92,11 +92,9 @@ namespace Toyota.Controllers
                 lang = Request.Headers["lang"].ToString();
             }
 
-            DetailsInNode detailsInNode = ClassCrud.GetDetailsInNode(node_id, lang, brand_id);
+            DetailsInNode detailsInNode = ClassCrud.GetDetailsInNode(vehicle_id, node_id, lang, brand_id);
             return Json(detailsInNode);
         }
-
-
         [HttpPost]    //   6.1
         [Route("/vehicle/{vehicle_id:required}/sgroups")]
         public IActionResult GetSgroups(string vehicle_id, string group_id, string[] codes, string[] node_ids)

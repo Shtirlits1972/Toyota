@@ -24,7 +24,7 @@ namespace Toyota.Models
                 {
                     #region strCommand
                     string strCommand = "  SELECT " +
-                                        "  CONCAT(mc.catalog, '_', mc.catalog_code, '_', mc.compl_code, '_', mc.sysopt) vehicle_id, " +
+                                       $"  { VehicleStruct_ID.GetVehicleId() } vehicle_id, " +
                                         "  mc.model_name, " +
                                         "  mc.brand, " +
                                         "  mc.catalog, " +
@@ -124,7 +124,7 @@ namespace Toyota.Models
             {
                 #region strCommand
                 string strCommand = " SELECT " +
-                                    " CONCAT(php1.catalog, '_', php1.catalog_code, '_', php1.part_group, '_', php1.pic_code) group_id, " +
+                                    " CONCAT(php1.catalog, '_', php1.catalog_code, '_', php1.part_group) group_id, " +
                                     " t1.name " +
                                     " FROM pg_header_pics php1 " +
                                     " LEFT JOIN " +
@@ -189,75 +189,6 @@ namespace Toyota.Models
 
             return list.Take(qty).ToList();
         }
-        #region MyRegion
-        //public static List<SpareParts> GetSpareParts(string group_id, string code_lang = "EU")
-        //{
-        //    List<SpareParts> list = new List<SpareParts>();
-
-        //    string[] pstrArr = group_id.Split("_");
-
-        //    string catalog = pstrArr[0];
-        //    string catalog_code = pstrArr[1];
-        //    string part_group = pstrArr[2];
-
-        //    try
-        //    {
-        //        #region strCommand
-
-        //        string strCommand = " SELECT CONCAT(pc.catalog, '_', pc.catalog_code, '_', pc.part_group, '_', t1.pnc) id, " +
-        //                            " t1.name, " +
-        //                            " pd.desc_en deskr, " +
-        //                            " pp.pic_code image_id " +
-        //                            " FROM part_codes pc " +
-        //                            " LEFT JOIN " +
-        //                            " (SELECT p.pnc, p.desc_lang name  FROM " +
-        //                            " pncs p " +
-        //                            " WHERE " +
-        //                            " p.catalog = @catalog " +
-        //                            " AND p.pnc IN " +
-        //                            " (SELECT pc.pnc FROM " +
-        //                            " part_codes pc " +
-        //                            " WHERE pc.catalog  = @catalog " +
-        //                            " AND p.code_lang = @code_lang " + 
-        //                            " AND pc.catalog_code = @catalog_code " +
-        //                            " AND pc.part_group = @part_group ))t1 " +
-        //                            " ON pc.pnc = t1.pnc " +
-
-        //                            " LEFT JOIN  pg_pictures pp ON pc.catalog = pp.catalog " +
-        //                            " AND pc.catalog_code = pp.catalog_code " +
-        //                            " AND pc.part_group = pp.part_group " +
-
-        //                            " LEFT JOIN pic_desc pd ON pc.catalog = pd.catalog " +
-        //                            " AND pc.catalog_code = pd.catalog_code " +
-        //                            " AND pp.pic_desc_code = pd.pic_num " +
-
-        //                            " WHERE pc.catalog = @catalog " +
-        //                            " AND pc.catalog_code = @catalog_code " +
-        //                            " AND pc.part_group = @part_group ; ";
-        //        #endregion
-
-        //        using (IDbConnection db = new MySqlConnection(strConn))
-        //        {
-        //            list = db.Query<SpareParts>(strCommand, new { catalog, catalog_code, part_group, code_lang }).ToList();
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        string Error = ex.Message;
-        //        int o = 0;
-        //    }
-
-        //    if (list != null)
-        //    {
-        //        for (int i = 0; i < list.Count; i++)
-        //        {
-        //             list[i].hotspots = GetHotspots(group_id, code_lang);
-        //        }
-        //    }
-
-        //    return list;
-        //} 
-        #endregion
         public static List<Filters> GetFilters(string model_id, string[] param, string brand_id = "TOYOTA")
         {
             List<Filters> filters = new List<Filters>();
@@ -1052,13 +983,6 @@ namespace Toyota.Models
         }
         public static List<Sgroups> GetSgroups(string vehicle_id, string  group_id, string code_lang = "EN")
         {
-                //http://45.153.231.203:8090/vehicle/EU_102510_007_432W/sgroups?&group_id=EU_102510_1107 {
-                //"node_id": "EU_102510_1107_115666D",
-                //"name": "MOUNTING",
-                //"image_id": "eu_a1_115666D-png",
-                //"image_ext": ".png",
-                //"attributes": null
-
 
             List<Sgroups> list = null;
 
@@ -1067,74 +991,59 @@ namespace Toyota.Models
             string catalog = strArr[0];
             string catalog_code = strArr[1];
             string part_group = strArr[2];
-            string pic_code = strArr[3];
+            ////"     string pic_code = strArr[3];
 
 
-            string [] strVehicleArr = vehicle_id.Split("_");
-            string compl_code = strVehicleArr[2];
+            VehicleStruct_ID vs = new VehicleStruct_ID(vehicle_id);
 
             try
             {
-                #region strCommand
-                //    EU_A1_47A909C.png
-                //string strCommand = " SELECT  DISTINCT " +
-                //                    " CONCAT(php1.catalog, '_', php1.catalog_code, '_', php1.part_group, '_', php1.pic_code  ) node_id, " +
-                //                    " t1.name, " +
-                //                    " REPLACE(CONCAT( LOWER(php1.catalog),'_', LOWER(i.cd), '_', php1.pic_code, i.img_format ), '.', '-') image_id,  " +
-                //                    " '.png' image_ext  " +
-                //                    " FROM pg_header_pics php1 " +
-                //                    " LEFT JOIN " +
-                //                    " (SELECT pg.group_id id, " +
-                //                    " pg.desc_lang name " +
-                //                    " FROM part_groups pg " +
-                //                    " WHERE pg.catalog = @catalog " +
-                //                    " AND pg.code_lang = @code_lang  " +
-                //                    " AND pg.group_id IN " +
-                //                    " (SELECT php.part_group FROM " +
-                //                    " pg_header_pics php " +
-                //                    " WHERE php.catalog = @catalog " +
-                //                    " AND php.catalog_code = @catalog_code ))t1 " +
-                //                    " ON php1.part_group = t1.id " +
-
-                //                    " LEFT JOIN pg_pictures pp ON php1.catalog = pp.catalog AND " +
-                //                    " php1.part_group = pp.part_group " +
-
-                //                    " LEFT JOIN images i ON pp.catalog = i.catalog AND " +
-                //                    " pp.pic_code = i.pic_code " +
-
-                //                    " WHERE php1.catalog = @catalog " +
-                //                    " AND php1.part_group = @part_group " +
-                //                    " AND php1.catalog_code = @catalog_code " +
-                //                    " AND CONCAT(LOWER(php1.catalog), '_', i.cd, '_', php1.pic_code, i.img_format) IS NOT NULL;";
+                #region MyRegion
+                //string strCommand = "SELECT DISTINCT " +
+                //        " CONCAT(pp.catalog, '_', pp.catalog_code, '_', pp.part_group, '_', pp.pic_code ) node_id, " +
+                //        " pg.desc_lang name, " +
+                //        " REPLACE(CONCAT(LOWER(pp.catalog), '_', LOWER(i.cd), '_', pp.pic_code, i.img_format), '.', '-') image_id, " +
+                //        " i.img_format image_ext " +
+                //        " FROM pg_pictures pp " +
+                //        " LEFT JOIN images i ON pp.catalog = i.catalog " +
+                //        " AND pp.pic_code = i.pic_code " +
+                //        " LEFT JOIN part_groups pg  ON pp.catalog = pg.catalog " +
+                //        " AND pp.part_group = pg.group_id " +
+                //        " WHERE pp.catalog = @catalog " +
+                //        " AND pp.part_group = @part_group " +
+                //        " AND pp.catalog_code = @catalog_code " +
+                //        " AND pg.code_lang = @code_lang " +
+                //        " AND pp.pic_code =  @pic_code; "; 
                 #endregion
 
-                string strCommand = "SELECT DISTINCT " +
-                        " CONCAT(pp.catalog, '_', pp.catalog_code, '_', pp.part_group, '_', pp.pic_code ) node_id, " +
-                        " pg.desc_lang name, " +
-                        " REPLACE(CONCAT(LOWER(pp.catalog), '_', LOWER(i.cd), '_', pp.pic_code, i.img_format), '.', '-') image_id, " +
-                        " i.img_format image_ext " +
-                        " FROM pg_pictures pp " +
-                        " LEFT JOIN images i ON pp.catalog = i.catalog " +
-                        " AND pp.pic_code = i.pic_code " +
-                        " LEFT JOIN part_groups pg  ON pp.catalog = pg.catalog " +
-                        " AND pp.part_group = pg.group_id " +
-                        " WHERE pp.catalog = @catalog " +
-                        " AND pp.part_group = @part_group " +
-                        " AND pp.catalog_code = @catalog_code " +
-                        " AND pg.code_lang = @code_lang " +
-                        " AND pp.pic_code =  @pic_code; ";
-
-                        //" AND  pp.ipic_code IN  " +
-                        //" (SELECT DISTINCT ci.ipic_code FROM complectation_images ci WHERE " +
-                        //" ci.catalog = @catalog  AND " +
-                        //" ci.catalog_code = @catalog_code  AND  " +
-                        //" ci.compl_code IN " +
-                        //" (SELECT DISTINCT mc.compl_code FROM model_codes mc " +
-                        //" WHERE mc.catalog = @catalog  AND mc.compl_code = @compl_code AND mc.catalog_code = @catalog_code )); ";
+                string strCommand = " SELECT DISTINCT " +
+                                    " CONCAT(pp.catalog, '_', pp.catalog_code, '_', pp.part_group, '_', pp.pic_code)  node_id, " +
+                                    " pg.desc_lang name, " +
+                                    " REPLACE(CONCAT(LOWER(pp.catalog), '_', LOWER(i.cd), '_', pp.pic_code, i.img_format), '.', '-') image_id,  " +
+                                    " i.img_format image_ext " +
+                                    " FROM pg_pictures pp " +
+                                    " LEFT JOIN part_groups pg ON pp.catalog = pg.catalog AND " +
+                                    " pp.part_group = pg.group_id " +
+                                    " LEFT JOIN images i ON pp.catalog = i.catalog " +
+                                    " AND pp.pic_code = i.pic_code " +
+                                    " WHERE pp.catalog = @catalog AND " +
+                                    " pp.catalog_code = @catalog_code AND " +
+                                    " pp.part_group = @part_group  AND  " +
+                                    " pg.code_lang = @code_lang  AND " +
+                                    " pp.f4 IN " +
+                                    " (SELECT CONCAT('0', mc.compl_code) compl_code FROM model_codes mc " +
+                                    " WHERE mc.catalog = @catalog AND " +
+                                    " mc.catalog_code = @catalog_code AND " +
+                                    " mc.model_code = @model_code AND " +
+                                    " mc.model_id = @model_id AND " +
+                                    " mc.grade = @grade  AND " +
+                                    " mc.engine1 = @engine1  ); ";
 
                 using (IDbConnection db = new MySqlConnection(strConn))
                 {
-                    list = db.Query<Sgroups>(strCommand, new { catalog, catalog_code, code_lang, part_group, compl_code, pic_code }).ToList();
+                    list = db.Query<Sgroups>(strCommand, new { catalog, catalog_code, code_lang, part_group, model_code = vs.model_code,
+                        model_id = vs.model_id, grade = vs.grade,
+                        engine1 = vs.engine1 }).ToList();
                 }
             }
             catch(Exception ex)
@@ -1161,7 +1070,7 @@ namespace Toyota.Models
             {
                 #region strCommand
                 string strCommand = "  SELECT " +
-                                    "  CONCAT(mc.catalog, '_', mc.catalog_code, '_', mc.compl_code, '_', mc.sysopt) vehicle_id, " +
+                                   $"  { VehicleStruct_ID.GetVehicleId() } vehicle_id, " +
                                     "  mc.model_name, " +
                                     "  mc.brand, " +
                                     "  mc.catalog, " +
@@ -1278,15 +1187,10 @@ namespace Toyota.Models
 
                 if (strArr.Length == 4)
                 {
-                    string catalog = strArr[0];
-                    string catalog_code = strArr[1];
-                    string compl_code = strArr[2];
-                    string sysopt = strArr[3];
-
-
+                    VehicleStruct_ID vs = new VehicleStruct_ID(vehicle_id);
                     #region strCommand
                     string strCommand = "  SELECT " +
-                                        "  CONCAT(mc.catalog, '_', mc.catalog_code, '_', mc.compl_code, '_', mc.sysopt) vehicle_id, " +
+                                       $"  { VehicleStruct_ID.GetVehicleId() } vehicle_id, " +
                                         "  mc.model_name, " +
                                         "  mc.brand, " +
                                         "  mc.catalog, " +
@@ -1304,6 +1208,10 @@ namespace Toyota.Models
                                         " mc.catalog = @catalog " +
                                         " AND mc.catalog_code = @catalog_code " +
                                         " AND mc.compl_code = @compl_code " +
+
+                                        " AND mc.engine1 = @engine1 " +
+                                        " AND mc.model_code = @model_code " +
+
                                         " AND mc.sysopt = @sysopt  LIMIT 1; ";
 
 
@@ -1311,7 +1219,8 @@ namespace Toyota.Models
 
                     using (IDbConnection db = new MySqlConnection(strConn))
                     {
-                        CarTypeInfo carType = db.Query<CarTypeInfo>(strCommand, new { catalog, catalog_code, compl_code, sysopt }).FirstOrDefault();
+                        CarTypeInfo carType = db.Query<CarTypeInfo>(strCommand, new { catalog = vs.catalog, catalog_code = vs.catalog_code, compl_code = vs.compl_code,
+                            sysopt = vs.sysopt, engine1 = vs.engine1,  model_code = vs.model_code  }).FirstOrDefault();
 
                         List<attributes> list = GetAttributes();
 
@@ -1420,7 +1329,7 @@ namespace Toyota.Models
             }
             return list;
         }
-        public static DetailsInNode GetDetailsInNode(string node_id, string lang = "EN", string brand_id = "TOYOTA")
+        public static DetailsInNode GetDetailsInNode(string vehicle_id, string node_id, string lang = "EN", string brand_id = "TOYOTA")
         {
 
             if(String.IsNullOrEmpty(lang))
@@ -1437,6 +1346,9 @@ namespace Toyota.Models
             string group_id = strArr[2];
             string pic_code = strArr[3];
 
+
+            VehicleStruct_ID vehicleStruct = new VehicleStruct_ID(vehicle_id);
+
             DetailsInNode detailsInNode = new DetailsInNode { node_id = node_id };
 
             string strCommand = " SELECT desc_lang " +
@@ -1446,51 +1358,39 @@ namespace Toyota.Models
                                 " AND code_lang = @lang " +
                                 " LIMIT 1; ";
 
-            #region MyRegion
-            //string strCommDeatil = "  SELECT  DISTINCT  pc2.part_code number,  " +
-            //" p.desc_lang name, " +
-            //" p.pnc pnc_label2 " +
-            //" FROM " +
-            //" pncs p " +
-            //" INNER JOIN part_codes pc2 ON p.catalog = pc2.catalog " +
-            //" AND p.pnc = pc2.pnc " +
-            //" WHERE " +
-            //" p.pnc IN " +
+             string strCommDeatil = " SELECT " +
+                                    " pc.part_code number, " +
+                                    " p.desc_lang name, " +
+                                    " p.pnc pnc_label2, " +
+                                    " p.catalog, " +
+                                    " @catalog_code catalog_code, " +
+                                    " CONCAT(  pc.start_date,'-', pc.end_date, '..', pc.add_desc) attr" + 
+                                    " FROM part_catalog pc " +
+                                    " JOIN pncs p ON pc.catalog = p.catalog  AND pc.pnc = p.pnc " +
+                                    " WHERE pc.catalog_code = @catalog_code AND pc.catalog = @catalog " +
+                                    " AND pc.add_desc LIKE CONCAT('%', (SELECT SUBSTRING(@frame , 1, (SELECT LENGTH(@frame)-1))), '%') " +
+                                    " AND pc.add_desc LIKE CONCAT('%', @engine1,  '%') " +
+                                    " AND pc.pnc IN ( " +
+                                    " SELECT DISTINCT i.label2 FROM " +
+                                    " images2 i " +
+                                    " WHERE " +
+                                    " i.image_name = @pic_code AND i.label1 = '3') " +
+                                    " AND p.code_lang = @lang " +
+                                    " UNION ALL " +
+                                    " SELECT '  ' number, " +
+                                    " ' Untitled ' name, " +
+                                    " i.label2 pnc_label2, " +
+                                    " @catalog catalog, " +
+                                    " @catalog_code catalog_code, " +
+                                    " ' ' attr " + 
+                                    " FROM " +
+                                    " images2 i " +
+                                    " WHERE " +
+                                    " i.image_name = @pic_code AND i.label1 = '4' ; ";
 
-            //" (SELECT DISTINCT pc.pnc " +
-            //" FROM part_codes pc " +
-            //" WHERE " +
-            //" pc.catalog = @catalog " +
-            //" AND pc.catalog_code = @catalog_code " +
-            //" AND pc.part_group = @group_id) " +
+            //   
 
-            //" AND p.catalog = @catalog " +
-            //" AND p.code_lang = @lang " +
-
-            //" AND pc2.catalog = @catalog " +
-            //" AND pc2.catalog_code = @catalog_code " +
-            //" AND pc2.part_group = @group_id ";
-            #endregion
-
-
-            string strCommDeatil = " SELECT  " +
-            " (SELECT DISTINCT pc2.part_code FROM part_codes pc2 WHERE " +
-            " pc2.catalog = @catalog " +
-            " AND pc2.pnc = p.pnc AND pc2.part_group = @group_id LIMIT 1)  'number',  " +
-            " p.desc_lang 'name', " +
-            " p.pnc pnc_label2, " +
-            " p.catalog,  " +
-            " @catalog_code AS 'catalog_code' " +
-            " FROM " +
-            " pncs p " +
-            " WHERE " +
-            " p.code_lang = @lang AND " +
-            " p.catalog = @catalog AND " +
-            " p.pnc IN " +
-            " (SELECT DISTINCT pc.pnc FROM part_codes pc " +
-            " WHERE pc.catalog = @catalog  AND " +
-            " pc.catalog_code = @catalog_code  AND " +
-            " pc.part_group = @group_id); ";
+//string strCommDeatil = " CALL Getpart_catalog( @catalog, @catalog_code, @pic_code, @lang, @frame ); ";
 
             #region strCommImages
 
@@ -1515,13 +1415,19 @@ namespace Toyota.Models
                 using (IDbConnection db = new MySqlConnection(strConn))
                 {
                     detailsInNode.name = db.Query<string>(strCommand, new { catalog, group_id, lang }).FirstOrDefault();
-                    detailsInNode.parts = db.Query<Detail>(strCommDeatil, new { catalog, catalog_code, group_id, lang }).ToList();
+                    detailsInNode.parts = db.Query<Detail>(strCommDeatil, new { catalog, catalog_code, lang, pic_code,
+                    engine1 = vehicleStruct.engine1, frame = vehicleStruct.frame  }).ToList();
                     detailsInNode.images = db.Query<images>(strCommImages, new { catalog, catalog_code, group_id, pic_code }).ToList();
                 }
 
                 for (int i = 0; i < detailsInNode.parts.Count; i++)
                 {
                     detailsInNode.parts[i].hotspots = GetHotspots(node_id, detailsInNode.parts[i].pnc_label2, lang);
+
+                    if(!String.IsNullOrWhiteSpace(detailsInNode.parts[i].attr) && (detailsInNode.parts[i].attr.Trim().Length > 0))
+                    {
+                        detailsInNode.parts[i].attributes = CreateAttr(detailsInNode.parts[i].attr);
+                    }
                 }
 
                 detailsInNode.parts = detailsInNode.parts.Where(x => x.hotspots.Count > 0).ToList();
@@ -1533,6 +1439,14 @@ namespace Toyota.Models
             }
 
             return detailsInNode;
+        }
+        private static List<attributes> CreateAttr(string strAttr)
+        {
+            List<attributes> list = new List<attributes>();
+                        attributes attributes = new attributes { code = "note", name = "Примечание", value = strAttr };
+
+            list.Add(attributes);
+            return list;
         }
         public static List<hotspots> GetHotspots(string node_id, string label2, string lang = "EN")
         {
