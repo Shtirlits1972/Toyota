@@ -983,39 +983,17 @@ namespace Toyota.Models
         }
         public static List<Sgroups> GetSgroups(string vehicle_id, string  group_id, string code_lang = "EN")
         {
-
             List<Sgroups> list = null;
-
             string[] strArr = group_id.Split("_");
 
             string catalog = strArr[0];
             string catalog_code = strArr[1];
             string part_group = strArr[2];
-            ////"     string pic_code = strArr[3];
-
 
             VehicleStruct_ID vs = new VehicleStruct_ID(vehicle_id);
 
             try
             {
-                #region MyRegion
-                //string strCommand = "SELECT DISTINCT " +
-                //        " CONCAT(pp.catalog, '_', pp.catalog_code, '_', pp.part_group, '_', pp.pic_code ) node_id, " +
-                //        " pg.desc_lang name, " +
-                //        " REPLACE(CONCAT(LOWER(pp.catalog), '_', LOWER(i.cd), '_', pp.pic_code, i.img_format), '.', '-') image_id, " +
-                //        " i.img_format image_ext " +
-                //        " FROM pg_pictures pp " +
-                //        " LEFT JOIN images i ON pp.catalog = i.catalog " +
-                //        " AND pp.pic_code = i.pic_code " +
-                //        " LEFT JOIN part_groups pg  ON pp.catalog = pg.catalog " +
-                //        " AND pp.part_group = pg.group_id " +
-                //        " WHERE pp.catalog = @catalog " +
-                //        " AND pp.part_group = @part_group " +
-                //        " AND pp.catalog_code = @catalog_code " +
-                //        " AND pg.code_lang = @code_lang " +
-                //        " AND pp.pic_code =  @pic_code; "; 
-                #endregion
-
                 string strCommand = " SELECT DISTINCT " +
                                     " CONCAT(pp.catalog, '_', pp.catalog_code, '_', pp.part_group, '_', pp.pic_code)  node_id, " +
                                     " pg.desc_lang name, " +
@@ -1030,20 +1008,18 @@ namespace Toyota.Models
                                     " pp.catalog_code = @catalog_code AND " +
                                     " pp.part_group = @part_group  AND  " +
                                     " pg.code_lang = @code_lang  AND " +
-                                    " pp.f4 IN " +
-                                    " (SELECT CONCAT('0', mc.compl_code) compl_code FROM model_codes mc " +
-                                    " WHERE mc.catalog = @catalog AND " +
-                                    " mc.catalog_code = @catalog_code AND " +
-                                    " mc.model_code = @model_code AND " +
-                                    " mc.model_id = @model_id AND " +
-                                    " mc.grade = @grade  AND " +
-                                    " mc.engine1 = @engine1  ); ";
+
+                                    " pp.fnum = '000' AND  " +
+                                    " pp.ipic_code IN  " +
+                                    " ( SELECT DISTINCT ipic_code  " +
+                                    " FROM complectation_images  " +
+                                    " WHERE compl_code = @compl_code AND  " +
+                                    " catalog_code = @catalog_code AND  " +
+                                    " catalog = @catalog )  ";
 
                 using (IDbConnection db = new MySqlConnection(strConn))
                 {
-                    list = db.Query<Sgroups>(strCommand, new { catalog, catalog_code, code_lang, part_group, model_code = vs.model_code,
-                        model_id = vs.model_id, grade = vs.grade,
-                        engine1 = vs.engine1 }).ToList();
+                    list = db.Query<Sgroups>(strCommand, new { catalog, catalog_code, code_lang, part_group, compl_code = vs.compl_code }).ToList();
                 }
             }
             catch(Exception ex)
@@ -1376,6 +1352,7 @@ namespace Toyota.Models
                                     " WHERE " +
                                     " i.image_name = @pic_code AND i.label1 = '3') " +
                                     " AND p.code_lang = @lang " +
+
                                     " UNION ALL " +
                                     " SELECT '  ' number, " +
                                     " ' Untitled ' name, " +
@@ -1388,13 +1365,7 @@ namespace Toyota.Models
                                     " WHERE " +
                                     " i.image_name = @pic_code AND i.label1 = '4' ; ";
 
-            //   
-
-//string strCommDeatil = " CALL Getpart_catalog( @catalog, @catalog_code, @pic_code, @lang, @frame ); ";
-
             #region strCommImages
-
-            //    http://185.101.204.28:4489/toyota/EU/
 
             string strCommImages = " SELECT  DISTINCT " +
                                     " REPLACE(CONCAT(i.catalog, '_', i.cd, '_',  i.pic_code, i.img_format), '.', '-') image_id, " +
