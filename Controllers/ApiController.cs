@@ -9,6 +9,7 @@ using System.IO;
 using System.Configuration;
 using System.Net.Http;
 using System.Net;
+using System.Reflection.Metadata;
 
 namespace Toyota.Controllers
 {
@@ -83,7 +84,7 @@ namespace Toyota.Controllers
             return Json(list);
         }
         //  /vehicle/EU_252230_007_515G/sgroups/EU_252230_1201
-        [Route("/vehicle/{vehicle_id:required}/sgroups/{node_id:required}")]   //   5
+        [Route("/vehicle/{vehicle_id:required}/sgroups/{node_id:required}")]    //   5
         public IActionResult GetSpareParts(string vehicle_id, string node_id, string brand_id = "TOYOTA")
         {
             string lang = "EN";
@@ -97,24 +98,48 @@ namespace Toyota.Controllers
         }
         [HttpPost]    //   6.1
         [Route("/vehicle/{vehicle_id:required}/sgroups")]
-        public IActionResult GetSgroups(string vehicle_id, string group_id, string[] codes, string[] node_ids)
+        public IActionResult GetSgroups(string vehicle_id, string group_id,  string[] codes, string[] node_id, [FromBody] codePost n1)
         {
+            VehicleStruct_ID vs = new VehicleStruct_ID(vehicle_id);
+
+            //string catalog = 
+            //string catalog_code,
+            //string part_group,
+            //string compl_code,
+
             #region lang
             string lang = "EN";
             if (!String.IsNullOrEmpty(Request.Headers["lang"].ToString()))
             {
                 lang = Request.Headers["lang"].ToString();
-            } 
+            }
             #endregion
 
-            if (!String.IsNullOrEmpty(group_id) )
+            if (!String.IsNullOrEmpty(group_id))
             {
-                List<Sgroups> list = ClassCrud.GetSgroups(vehicle_id, group_id, lang);
+                string part_group = group_id.Substring(group_id.LastIndexOf("_") + 1, group_id.Length - (group_id.LastIndexOf("_") + 1));
+
+                List<Sgroups> list = ClassCrud.GetSgroups(vs.catalog, vs.catalog_code, part_group, vs.compl_code, lang);
                 return Json(list);
             }
-            else if((codes != null && codes.Length > 0) || (node_ids != null && node_ids.Length>0 ))
+            //   else if ((codes != null && codes.Length > 0) || (node_id != null && node_id.Length > 0))
+            else if (n1 != null)
             {
-                List<node> list = ClassCrud.GetNodes(codes, node_ids);
+                string part_group = string.Empty;
+
+                for(int i=0; i<n1.codes.Length; i++)
+                {
+                    if(i==0)
+                    {
+                        part_group += "'" + n1.codes[i] + "'";
+                    }
+                    else
+                    {
+                        part_group += ", '" + n1.codes[i] + "'";
+                    }
+                }
+
+                List<Sgroups> list = ClassCrud.GetSgroups(vs.catalog, vs.catalog_code, part_group, vs.compl_code, lang);
                 return Json(list);
             }
 
@@ -134,13 +159,14 @@ namespace Toyota.Controllers
             List<header> headerList = ClassCrud.GetHeaders(8);
             List<CarTypeInfo> list = ClassCrud.GetListCarTypeInfoFilterCars(model_id, param, brand_id); // 
 
+            int count = list.Count;
             list = list.Skip((page - 1) * page_size).Take(page_size).ToList();
 
             var result = new
             {
                 header = headerList,
                 items = list,
-                cnt_items = list.Count,
+                cnt_items = count,
                 page = page
             };
             return Json(result);
@@ -174,6 +200,25 @@ namespace Toyota.Controllers
             }
         }
 
+        [Route("/model")]
+        public IActionResult GetModelAndBrand(string model_id, string brand_id = "10")
+        {
+            model model = ClassCrud.GetModelAndBrand(model_id);
+            return Json(model);
+        }
+
+        [Route("/codes-for-tree")]
+        public IActionResult CodesForTree(string vehicle_id)
+        {
+            string lang = "EN";
+            if (!String.IsNullOrEmpty(Request.Headers["lang"].ToString()))
+            {
+                lang = Request.Headers["lang"].ToString();
+            }
+
+            List<string> list = ClassCrud.CodesForTree(vehicle_id, lang);
+            return Json(list);
+        }
         //[HttpPost]
         //[Route("/vehicle/{vehicle_id:required}/sgroups")]
         //public IActionResult GetNodes(string vehicle_id, string[] codes, string[] node_ids)

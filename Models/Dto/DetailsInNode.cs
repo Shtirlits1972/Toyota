@@ -10,6 +10,7 @@ namespace Toyota.Models.Dto
         // список деталей в узле
         public string node_id { get; set; }
         public string name { get; set; }
+        public string number { get; set; }
         public List<Detail> parts { get; set; }
         public List<images> images { get; set; }
         public List<attributes> attributes { get; set; }

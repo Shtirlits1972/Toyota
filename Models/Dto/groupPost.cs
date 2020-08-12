@@ -5,15 +5,13 @@ using System.Threading.Tasks;
 
 namespace Toyota.Models.Dto
 {
-    public class node
+    public class groupPost
     {
-        public string code { get; set; }
-        public string name { get; set; }
-        public string node_id { get; set; }
-
+        public string vehicle_id { get; set; }
+        public string group_id { get; set; }
         public override string ToString()
         {
-            return name;
+            return vehicle_id;
         }
     }
 }
